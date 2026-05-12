@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fernando Rojas | Portafolio Estudiantil</title>
+    <title>Fernando Rojas | Portafolio Profesional</title>
+    <!-- Framework de Estilos: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos: Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
@@ -13,12 +15,7 @@
             font-family: 'Inter', sans-serif;
         }
 
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
+        /* Efecto de revelación suave */
         .reveal {
             opacity: 0;
             transform: translateY(20px);
@@ -30,11 +27,12 @@
             transform: translateY(0);
         }
 
+        /* Gradiente temático para proyectos de Minecraft */
         .minecraft-gradient {
             background: linear-gradient(135deg, #559c3f 0%, #3e6d2c 100%);
         }
 
-        /* Estilos para el Modal de Ayuda */
+        /* Control de visibilidad del modal */
         #help-modal {
             display: none;
             align-items: center;
@@ -48,90 +46,91 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
 
-    <!-- Navegación -->
+    <!-- BARRA DE NAVEGACIÓN -->
     <nav class="fixed w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
             <span class="text-xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">FR</span>
-            <div class="hidden md:flex space-x-8 text-sm font-medium">
+            <div class="hidden md:flex space-x-8 text-sm font-medium items-center">
                 <a href="#inicio" class="hover:text-indigo-600 transition">Inicio</a>
                 <a href="#sobre-mi" class="hover:text-indigo-600 transition">Sobre Mí</a>
                 <a href="#proyectos" class="hover:text-indigo-600 transition">Proyectos</a>
                 <a href="#contacto" class="hover:text-indigo-600 transition">Contacto</a>
-                <!-- Nueva pestaña de Ayuda -->
-                <button onclick="toggleHelpModal()" class="flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition font-bold">
+                <!-- Botón de Ayuda -->
+                <button onclick="toggleHelpModal()" class="flex items-center gap-2 px-4 py-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-md">
                     <i class="fas fa-question-circle"></i> Ayuda
                 </button>
             </div>
+            <!-- Toggle de Tema (Claro/Oscuro) -->
             <button id="theme-toggle" class="p-2 rounded-lg bg-slate-200 dark:bg-slate-800" aria-label="Cambiar tema">
                 <i class="fas fa-moon dark:hidden"></i>
-                <i class="fas fa-sun hidden dark:block"></i>
+                <i class="fas fa-sun hidden dark:block text-yellow-400"></i>
             </button>
         </div>
     </nav>
 
-    <!-- Modal de Ayuda -->
+    <!-- VENTANA MODAL DE AYUDA -->
     <div id="help-modal" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm p-4">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all">
             <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-600 text-white">
                 <h3 class="text-xl font-bold flex items-center gap-2">
-                    <i class="fas fa-life-ring"></i> Centro de Ayuda
+                    <i class="fas fa-life-ring"></i> Guía del Sitio
                 </h3>
-                <button onclick="toggleHelpModal()" class="text-white hover:rotate-90 transition-transform duration-300 text-2xl">
+                <button onclick="toggleHelpModal()" class="text-white hover:scale-110 transition-transform text-2xl">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="p-8 max-h-[70vh] overflow-y-auto space-y-6">
                 <div>
-                    <h4 class="font-bold text-indigo-600 mb-2 uppercase text-xs tracking-widest">Navegación</h4>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">Puedes usar el menú superior para saltar rápidamente entre secciones. Haz clic en "Proyectos" para ver mis creaciones en Minecraft e IA.</p>
+                    <h4 class="font-bold text-indigo-600 mb-2 uppercase text-xs tracking-widest">¿Cómo navegar?</h4>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Usa el menú superior para desplazarte. En la sección de proyectos, encontrarás botones interactivos para conocer más sobre mi trabajo con IA.</p>
                 </div>
                 <div>
-                    <h4 class="font-bold text-indigo-600 mb-2 uppercase text-xs tracking-widest">Sobre los Proyectos</h4>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">Cada proyecto tiene un botón de "Detalles" que muestra la tecnología utilizada. Si te interesa la IA aplicada a videojuegos, no dudes en contactarme.</p>
+                    <h4 class="font-bold text-indigo-600 mb-2 uppercase text-xs tracking-widest">Tecnologías</h4>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Este sitio está construido con Tailwind CSS para garantizar rapidez y adaptabilidad en cualquier dispositivo móvil o tablet.</p>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <h4 class="font-bold mb-2 text-sm text-indigo-600">Preguntas Frecuentes</h4>
-                    <div class="space-y-3">
+                    <h4 class="font-bold mb-3 text-sm text-indigo-600 italic">Preguntas Frecuentes</h4>
+                    <div class="space-y-4">
                         <details class="text-sm cursor-pointer group">
                             <summary class="font-semibold text-slate-700 dark:text-slate-200 list-none flex justify-between items-center">
-                                ¿Cómo puedo trabajar contigo?
+                                ¿En qué escuela estudias?
                                 <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
                             </summary>
-                            <p class="mt-2 text-slate-500">Baja hasta la sección de contacto y envíame un mensaje directo.</p>
+                            <p class="mt-2 text-slate-500">Actualmente curso mis estudios en la Unidad Educativa Cambridge.</p>
                         </details>
                         <details class="text-sm cursor-pointer group border-t border-slate-200 dark:border-slate-700 pt-2">
                             <summary class="font-semibold text-slate-700 dark:text-slate-200 list-none flex justify-between items-center">
-                                ¿Qué es la IA en Minecraft?
+                                ¿Qué haces con IA en Minecraft?
                                 <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
                             </summary>
-                            <p class="mt-2 text-slate-500">Es el uso de algoritmos inteligentes para crear contenido procedural y mecánicas avanzadas en el juego.</p>
+                            <p class="mt-2 text-slate-500">Utilizo herramientas de IA generativa para diseñar estructuras complejas y automatizar procesos creativos dentro del juego.</p>
                         </details>
                     </div>
                 </div>
             </div>
-            <div class="p-6 bg-slate-50 dark:bg-slate-800 text-center">
-                <button onclick="toggleHelpModal()" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition w-full">
-                    Entendido
+            <div class="p-6 bg-slate-50 dark:bg-slate-800">
+                <button onclick="toggleHelpModal()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">
+                    Cerrar Ayuda
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Sección Hero -->
+    <!-- SECCIÓN HERO -->
     <section id="inicio" class="min-h-screen flex items-center justify-center pt-20 px-6">
         <div class="max-w-4xl text-center reveal">
             <span class="inline-block px-4 py-1.5 mb-6 text-xs font-semibold tracking-widest uppercase bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">
-                Estudiante en Unidad Educativa Cambridge
+                Unidad Educativa Cambridge
             </span>
             <h1 class="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
                 Hola, soy <span class="text-indigo-600">Fernando Rojas</span>
             </h1>
             <p class="text-xl md:text-2xl text-slate-600 dark:text-slate-400 mb-10 leading-relaxed max-w-2xl mx-auto">
-                Especialista en <span class="font-semibold text-slate-900 dark:text-white">Diseño Web</span> e <span class="font-semibold text-slate-900 dark:text-white">Inteligencia Artificial</span>, fusionando tecnología y creatividad.
+                Estudiante de <span class="font-semibold text-slate-900 dark:text-white">Diseño Web</span> e <span class="font-semibold text-slate-900 dark:text-white">Inteligencia Artificial</span>.
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <a href="#proyectos" class="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/25">
-                    Ver Proyectos
+                    Ver Portafolio
                 </a>
                 <a href="#contacto" class="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold transition-all">
                     Contactar
@@ -140,201 +139,173 @@
         </div>
     </section>
 
-    <!-- Sobre Mí -->
+    <!-- SOBRE MÍ -->
     <section id="sobre-mi" class="py-24 px-6 bg-slate-100 dark:bg-slate-800/50">
         <div class="max-w-5xl mx-auto">
             <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="reveal">
-                    <h2 class="text-3xl font-bold mb-6">Sobre mi trayectoria</h2>
-                    <p class="text-lg text-slate-600 dark:text-slate-400 mb-6">
-                        Soy un estudiante apasionado por las fronteras de la tecnología. En la Unidad Educativa Cambridge, he desarrollado un enfoque analítico que aplico en mis dos grandes pilares: el desarrollo web y la implementación de IA.
+                    <h2 class="text-3xl font-bold mb-6">Mis Pasiones</h2>
+                    <p class="text-lg text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                        Me apasiona explorar cómo la tecnología puede transformar la creatividad. Mi formación en Cambridge y mi interés por la informática me permiten crear soluciones digitales innovadoras.
                     </p>
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
-                                <i class="fas fa-chess"></i>
+                    <div class="space-y-5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                                <i class="fas fa-chess text-xl"></i>
                             </div>
                             <div>
-                                <h4 class="font-bold">Estratega de Ajedrez</h4>
-                                <p class="text-sm text-slate-500">Mente lógica y planificación táctica.</p>
+                                <h4 class="font-bold">Estratega en Ajedrez</h4>
+                                <p class="text-sm text-slate-500 italic">Análisis y resolución de problemas.</p>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
-                                <i class="fas fa-laptop-code"></i>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                                <i class="fas fa-microchip text-xl"></i>
                             </div>
                             <div>
-                                <h4 class="font-bold">Entusiasta de la Informática</h4>
-                                <p class="text-sm text-slate-500">Exploración constante de hardware y software.</p>
+                                <h4 class="font-bold">Informática Aplicada</h4>
+                                <p class="text-sm text-slate-500 italic">Curiosidad constante por el hardware y software.</p>
                             </div>
                         </div>
                     </div>
                 </div>
+                <!-- Tarjetas de Habilidades -->
                 <div class="grid grid-cols-2 gap-4 reveal">
                     <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                        <i class="fas fa-brain text-indigo-500 text-2xl mb-4"></i>
-                        <h3 class="font-bold mb-2">IA</h3>
-                        <p class="text-sm text-slate-500">Prompt Engineering y automatización.</p>
+                        <i class="fas fa-robot text-indigo-500 text-3xl mb-4"></i>
+                        <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">IA Generativa</h3>
+                        <p class="text-xs text-slate-500">Creación con IA.</p>
                     </div>
                     <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                        <i class="fas fa-code text-blue-500 text-2xl mb-4"></i>
-                        <h3 class="font-bold mb-2">Web</h3>
-                        <p class="text-sm text-slate-500">Diseño UI/UX y maquetación.</p>
+                        <i class="fas fa-paint-brush text-blue-500 text-3xl mb-4"></i>
+                        <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">Web Design</h3>
+                        <p class="text-xs text-slate-500">Interfaces modernas.</p>
                     </div>
                     <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                        <i class="fas fa-cube text-emerald-500 text-2xl mb-4"></i>
-                        <h3 class="font-bold mb-2">Gaming</h3>
-                        <p class="text-sm text-slate-500">Creación con IA en Minecraft.</p>
+                        <i class="fas fa-cubes text-emerald-500 text-3xl mb-4"></i>
+                        <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">Minecraft</h3>
+                        <p class="text-xs text-slate-500">Mundos asistidos por IA.</p>
                     </div>
                     <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
-                        <i class="fas fa-terminal text-slate-500 text-2xl mb-4"></i>
-                        <h3 class="font-bold mb-2">Sistemas</h3>
-                        <p class="text-sm text-slate-500">Pasión por la informática técnica.</p>
+                        <i class="fas fa-code text-slate-500 text-3xl mb-4"></i>
+                        <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">Frontend</h3>
+                        <p class="text-xs text-slate-500">Desarrollo limpio.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Proyectos -->
+    <!-- PROYECTOS -->
     <section id="proyectos" class="py-24 px-6">
         <div class="max-w-5xl mx-auto">
             <div class="text-center mb-16 reveal">
-                <h2 class="text-4xl font-bold mb-4">Proyectos Destacados</h2>
-                <p class="text-slate-600 dark:text-slate-400">Una muestra de mi trabajo combinando IA y creatividad.</p>
+                <h2 class="text-4xl font-bold mb-4">Mis Proyectos</h2>
+                <div class="w-20 h-1 bg-indigo-600 mx-auto rounded-full"></div>
             </div>
             <div class="grid md:grid-cols-2 gap-8">
-                <!-- Proyecto 1 -->
-                <div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all reveal">
-                    <div class="h-48 minecraft-gradient flex items-center justify-center text-white">
-                        <i class="fas fa-cubes text-6xl"></i>
+                <!-- Minecraft IA -->
+                <div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
+                    <div class="h-48 minecraft-gradient flex flex-col items-center justify-center text-white">
+                        <i class="fas fa-cube text-6xl mb-2 animate-bounce"></i>
+                        <span class="text-sm font-bold opacity-75">IA + Gaming</span>
                     </div>
                     <div class="p-8">
-                        <div class="flex justify-between items-start mb-4">
-                            <h3 class="text-2xl font-bold">Generación IA Minecraft</h3>
-                            <span class="px-3 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 text-xs font-bold rounded-full uppercase">Innovación</span>
-                        </div>
-                        <p class="text-slate-600 dark:text-slate-400 mb-6">
-                            Uso de modelos de lenguaje y visión para automatizar la creación de estructuras y mecánicas dentro de Minecraft.
+                        <h3 class="text-2xl font-bold mb-3 italic">Creación de contenido con IA (Minecraft)</h3>
+                        <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm">
+                            Integración de modelos de lenguaje para optimizar el diseño de mapas y la narrativa dentro del juego.
                         </p>
                         <div class="flex gap-2 flex-wrap mb-6">
-                            <span class="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Generative AI</span>
-                            <span class="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Python</span>
-                            <span class="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Minecraft API</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Prompt Engineering</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Minecraft Tools</span>
                         </div>
-                        <a href="#" class="inline-flex items-center text-indigo-600 font-bold hover:gap-2 transition-all">
-                            Ver Detalles <i class="fas fa-arrow-right ml-2 text-sm"></i>
-                        </a>
+                        <button class="text-indigo-600 font-bold flex items-center hover:gap-3 transition-all">
+                            Ver más <i class="fas fa-chevron-right ml-2"></i>
+                        </button>
                     </div>
                 </div>
-                <!-- Proyecto 2 -->
-                <div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-2xl transition-all reveal">
-                    <div class="h-48 bg-indigo-600 flex items-center justify-center text-white">
-                        <i class="fas fa-window-maximize text-6xl"></i>
+                <!-- Diseño Web -->
+                <div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
+                    <div class="h-48 bg-indigo-600 flex flex-col items-center justify-center text-white">
+                        <i class="fas fa-desktop text-6xl mb-2"></i>
+                        <span class="text-sm font-bold opacity-75">Frontend Development</span>
                     </div>
                     <div class="p-8">
-                        <div class="flex justify-between items-start mb-4">
-                            <h3 class="text-2xl font-bold">Portafolio Web Académico</h3>
-                            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 text-xs font-bold rounded-full uppercase">Web Design</span>
-                        </div>
-                        <p class="text-slate-600 dark:text-slate-400 mb-6">
-                            Diseño y desarrollo de una interfaz moderna para mostrar habilidades académicas utilizando Tailwind CSS.
+                        <h3 class="text-2xl font-bold mb-3 italic">Interfaces Adaptables</h3>
+                        <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm">
+                            Desarrollo de sitios web rápidos y accesibles utilizando frameworks modernos como Tailwind CSS.
                         </p>
                         <div class="flex gap-2 flex-wrap mb-6">
-                            <span class="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">HTML5</span>
-                            <span class="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Tailwind</span>
-                            <span class="text-xs font-medium px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">JS</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Tailwind CSS</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Responsive UI</span>
                         </div>
-                        <a href="#" class="inline-flex items-center text-indigo-600 font-bold hover:gap-2 transition-all">
-                            Ver Código <i class="fas fa-arrow-right ml-2 text-sm"></i>
-                        </a>
+                        <button class="text-indigo-600 font-bold flex items-center hover:gap-3 transition-all">
+                            Ver más <i class="fas fa-chevron-right ml-2"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Contacto -->
-    <section id="contacto" class="py-24 px-6 bg-slate-900 text-white">
+    <!-- CONTACTO -->
+    <section id="contacto" class="py-24 px-6 bg-slate-900 text-white rounded-t-[3rem]">
         <div class="max-w-4xl mx-auto text-center reveal">
-            <h2 class="text-4xl font-bold mb-8">¿Hablamos de tecnología?</h2>
-            <p class="text-slate-400 mb-12 text-lg">Estoy siempre interesado en nuevos proyectos de IA o colaboraciones en informática.</p>
-            
+            <h2 class="text-4xl font-bold mb-12 italic">¿Trabajamos juntos?</h2>
             <div class="grid md:grid-cols-2 gap-12 text-left">
-                <div class="space-y-8">
+                <div class="space-y-6">
                     <div>
-                        <h4 class="text-indigo-400 font-bold uppercase tracking-widest text-xs mb-4">Contacto Directo</h4>
-                        <p class="text-xl">fernando.rojas@ejemplo.com</p>
+                        <p class="text-indigo-400 text-xs font-bold uppercase mb-2">Email</p>
+                        <p class="text-xl">rojas.fernando@ejemplo.com</p>
                     </div>
                     <div>
-                        <h4 class="text-indigo-400 font-bold uppercase tracking-widest text-xs mb-4">Redes</h4>
+                        <p class="text-indigo-400 text-xs font-bold uppercase mb-4">Sígueme</p>
                         <div class="flex gap-4">
-                            <a href="#" class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition" aria-label="LinkedIn">
-                                <i class="fab fa-linkedin-in"></i>
-                            </a>
-                            <a href="#" class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition" aria-label="GitHub">
-                                <i class="fab fa-github"></i>
-                            </a>
-                            <a href="#" class="w-12 h-12 rounded-xl bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition" aria-label="Instagram">
-                                <i class="fab fa-instagram"></i>
-                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i class="fab fa-github"></i></a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i class="fab fa-linkedin"></i></a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i class="fab fa-instagram"></i></a>
                         </div>
                     </div>
                 </div>
-                <form class="space-y-4" onsubmit="event.preventDefault(); alert('¡Gracias Fernando! Mensaje enviado (Simulación).')">
-                    <input type="text" placeholder="Tu Nombre" class="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 transition" required>
-                    <textarea placeholder="Tu Mensaje" rows="4" class="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl focus:outline-none focus:border-indigo-500 transition" required></textarea>
-                    <button class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 rounded-xl font-bold transition">Enviar Mensaje</button>
+                <form class="space-y-4" onsubmit="event.preventDefault(); alert('¡Gracias Fernando! Recibí tu mensaje.');">
+                    <input type="text" placeholder="Nombre" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <textarea placeholder="Mensaje" rows="4" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
+                    <button class="w-full py-3 bg-indigo-600 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20">Enviar</button>
                 </form>
             </div>
         </div>
     </section>
 
-    <footer class="py-8 text-center text-sm text-slate-500 border-t border-slate-200 dark:border-slate-800">
-        <p>&copy; 2024 Fernando Rojas - Diseñado con IA para el futuro.</p>
+    <footer class="py-10 text-center text-slate-400 bg-slate-900 text-xs">
+        <p>Fernando Rojas &copy; 2024 - Estudiante de IA y Diseño Web</p>
     </footer>
 
+    <!-- SCRIPTS -->
     <script>
-        // Lógica de cambio de tema
+        // Lógica de Modo Oscuro
         const themeToggle = document.getElementById('theme-toggle');
         const html = document.documentElement;
-
-        themeToggle.addEventListener('click', () => {
-            html.classList.toggle('dark');
-        });
+        themeToggle.addEventListener('click', () => html.classList.toggle('dark'));
 
         // Lógica del Modal de Ayuda
         const helpModal = document.getElementById('help-modal');
         function toggleHelpModal() {
             helpModal.classList.toggle('active');
-            // Bloquear scroll si el modal está abierto
-            if (helpModal.classList.contains('active')) {
-                document.body.style.overflow = 'hidden';
-            } else {
-                document.body.style.overflow = 'auto';
-            }
+            document.body.style.overflow = helpModal.classList.contains('active') ? 'hidden' : 'auto';
         }
+        helpModal.addEventListener('click', (e) => { if(e.target === helpModal) toggleHelpModal(); });
 
-        // Cerrar modal al hacer clic fuera del contenido
-        helpModal.addEventListener('click', (e) => {
-            if (e.target === helpModal) toggleHelpModal();
-        });
-
-        // Efecto de revelación al hacer scroll
+        // Animación de aparición con scroll
         function reveal() {
-            var reveals = document.querySelectorAll(".reveal");
-            for (var i = 0; i < reveals.length; i++) {
-                var windowHeight = window.innerHeight;
-                var elementTop = reveals[i].getBoundingClientRect().top;
-                var elementVisible = 150;
-                if (elementTop < windowHeight - elementVisible) {
-                    reveals[i].classList.add("active");
-                }
-            }
+            const reveals = document.querySelectorAll(".reveal");
+            reveals.forEach(el => {
+                const windowHeight = window.innerHeight;
+                const elementTop = el.getBoundingClientRect().top;
+                if (elementTop < windowHeight - 100) el.classList.add("active");
+            });
         }
-
         window.addEventListener("scroll", reveal);
-        reveal();
+        window.onload = reveal;
     </script>
 </body>
 </html>
