@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Chess 3D: Multijugador Serverless</title>
+    
+    <!-- Tailwind CSS para diseño -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos de Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Motor de reglas de ajedrez Chess.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+    <!-- Motor gráfico 3D Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Controles de cámara orbital de Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            overflow: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.3);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-full w-full relative flex flex-col font-sans select-none antialiased text-slate-200">
+
+    <!-- Contenedor del Canvas 3D -->
+    <div id="canvas-container" class="absolute inset-0 w-full h-full z-0"></div>
+
+    <!-- Capa de Interfaz de Usuario de Fondo/Gradiente -->
+    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/40 pointer-events-none z-10"></div>
+
+    <!-- HUD Superior: Selector de Modo, Info de Nivel/Online y Botones de Acción -->
+    <header class="absolute top-0 inset-x-0 p-3 sm:p-4 flex flex-wrap gap-2.5 items-center justify-between z-20 pointer-events-auto">
+        <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Selector Principal de Modo: PvE vs Online -->
+            <div class="flex items-center bg-slate-900/90 backdrop-blur-md p-1 rounded-2xl border border-slate-800 shadow-xl">
+                <button id="mode-pve-btn" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-md">
+                    <i data-lucide="bot" class="w-3.5 h-3.5"></i>
+                    <span>Campaña Bot</span>
+                </button>
+                <button id="mode-online-btn" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 text-slate-400 hover:text-white">
+                    <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>Multijugador Online</span>
+                </button>
+            </div>
+
+            <!-- Info de Nivel PvE -->
+            <div id="pve-info-badge" class="flex items-center gap-2.5 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-slate-800 shadow-xl">
+                <div class="p-1.5 bg-indigo-600/30 rounded-xl text-indigo-400">
+                    <i data-lucide="compass" class="w-4 h-4 animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-[10px] font-bold tracking-wide uppercase text-indigo-300">Campaña PvE</h1>
+                    <p id="level-display" class="text-xs text-slate-300 font-semibold flex items-center">
+                        <span class="mr-1">🇧🇴</span> Nivel 1: Bolivia
+                    </p>
+                </div>
+            </div>
+
+            <!-- Info de Sala Online -->
+            <div id="online-info-badge" class="hidden flex items-center gap-2.5 bg-slate-900/90 backdrop-blur-md px-3.5 py-1.5 rounded-2xl border border-emerald-500/30 shadow-xl">
+                <div class="p-1.5 bg-emerald-500/20 rounded-xl text-emerald-400">
+                    <i data-lucide="wifi" class="w-4 h-4 animate-pulse"></i>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div>
+                        <h1 class="text-[10px] font-bold tracking-wide uppercase text-emerald-400">Sala Online</h1>
+                        <p id="online-room-code-display" class="text-xs font-mono font-bold text-slate-100">CÓDIGO: ------</p>
+                    </div>
+                    <button id="btn-copy-code" class="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-emerald-300 transition" title="Copiar Código">
+                        <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Identificador Dinámico de Apertura -->
+            <div id="opening-badge" class="hidden flex items-center gap-2 bg-indigo-950/85 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-indigo-500/40 shadow-xl text-xs font-semibold text-indigo-300 transition-all duration-300">
+                <i data-lucide="book-open" class="w-3.5 h-3.5 text-indigo-400"></i>
+                <span id="opening-text">Teoría: Defensa Siciliana</span>
+            </div>
+        </div>
+
+        <!-- Controles Rápidos -->
+        <div class="flex items-center gap-2">
+            <button id="btn-online-lobby" class="hidden flex items-center gap-1.5 bg-emerald-600/90 hover:bg-emerald-500 border border-emerald-400/40 px-3.5 py-2 rounded-xl transition shadow-lg text-xs font-bold text-white">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>Gestor de Sala</span>
+            </button>
+            <button id="btn-toggle-history" class="flex items-center gap-1.5 bg-slate-900/85 hover:bg-indigo-900/40 border border-slate-700/60 hover:border-indigo-500/80 px-3 py-2 rounded-xl transition shadow-lg text-xs font-medium">
+                <i data-lucide="history" class="w-4 h-4 text-indigo-400"></i>
+                <span class="hidden md:inline">Historial</span>
+            </button>
+            <button id="btn-campaign" class="flex items-center gap-1.5 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/50 px-3 py-2 rounded-xl transition shadow-lg text-xs font-medium">
+                <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+                <span class="hidden sm:inline">Mapa</span>
+            </button>
+            <button id="btn-camera" class="p-2 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition shadow-lg" title="Restablecer Cámara">
+                <i data-lucide="video" class="w-4 h-4 text-sky-400"></i>
+            </button>
+            <button id="btn-reset" class="p-2 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/50 rounded-xl transition shadow-lg" title="Reiniciar Partida">
+                <i data-lucide="rotate-ccw" class="w-4 h-4 text-rose-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Indicador de Turno Flotante -->
+    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+        <div id="turn-indicator" class="bg-slate-900/90 backdrop-blur-lg px-5 py-2.5 rounded-full border border-slate-800 shadow-2xl flex items-center gap-3 transition-all duration-300">
+            <span class="relative flex h-3.5 w-3.5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span id="turn-dot" class="relative inline-flex rounded-full h-3.5 w-3.5 bg-indigo-500"></span>
+            </span>
+            <span id="turn-text" class="text-xs sm:text-sm font-semibold tracking-wider uppercase text-slate-100">Tu turno (Blancas)</span>
+        </div>
+    </div>
+
+    <!-- PANEL LATERAL DERECHO (Historial de Movimientos y Capturas) -->
+    <aside id="history-panel" class="fixed right-0 top-0 h-full w-80 md:w-96 bg-slate-950/95 backdrop-blur-xl border-l border-slate-800/80 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col pt-20 pb-6 px-6 pointer-events-auto">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+            <div class="flex items-center gap-2.5">
+                <i data-lucide="scroll-text" class="w-5 h-5 text-indigo-400"></i>
+                <h2 class="text-lg font-bold tracking-tight text-indigo-200">Panel de Control</h2>
+            </div>
+            <button id="btn-close-history" class="p-1.5 hover:bg-slate-800/80 rounded-lg text-slate-400 hover:text-rose-400 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="mb-4 flex flex-col gap-3">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500">Piezas Capturadas</h3>
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-1.5">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-indigo-400/80 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 bg-indigo-400 rounded-full"></span>Capturas de Blancas
+                </span>
+                <div id="white-captures" class="flex flex-wrap gap-1 min-h-[32px] items-center text-slate-400 text-xl">
+                    <span class="text-xs text-slate-500 italic">Ninguna</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/40 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-1.5">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-rose-400/80 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 bg-rose-400 rounded-full"></span>Capturas de Negras
+                </span>
+                <div id="black-captures" class="flex flex-wrap gap-1 min-h-[32px] items-center text-slate-300 text-xl">
+                    <span class="text-xs text-slate-500 italic">Ninguna</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col min-h-0">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Registro de Movimientos</h3>
+            <div id="history-scroll-container" class="flex-1 overflow-y-auto bg-slate-900/30 border border-slate-800/60 rounded-xl p-4">
+                <div id="move-history-list" class="grid grid-cols-12 gap-y-2 text-sm text-slate-300">
+                    <div id="empty-history-notice" class="col-span-12 text-center text-xs text-slate-500 italic py-8">
+                        La batalla aún no ha comenzado...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MODAL: Gestor de Multijugador Online (Crear / Unirse a Sala) -->
+    <div id="modal-online" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-6 flex flex-col gap-6 transform scale-95 transition-all">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 bg-emerald-500/20 rounded-xl text-emerald-400">
+                        <i data-lucide="globe" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-100">Ajedrez Online PvP</h2>
+                        <p class="text-xs text-slate-400">Juega en tiempo real usando un código</p>
+                    </div>
+                </div>
+                <button id="close-online-modal" class="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-slate-100">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Pestañas de Crear vs Unirse -->
+            <div class="flex bg-slate-950 p-1 rounded-2xl border border-slate-800">
+                <button id="tab-create-btn" class="flex-1 py-2 text-xs font-bold rounded-xl transition bg-emerald-600 text-white shadow">
+                    Crear Nueva Sala
+                </button>
+                <button id="tab-join-btn" class="flex-1 py-2 text-xs font-bold rounded-xl transition text-slate-400 hover:text-white">
+                    Unirse con Código
+                </button>
+            </div>
+
+            <!-- Vista 1: Crear Sala -->
+            <div id="view-create-room" class="flex flex-col gap-4">
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Crea una sala privada. Tu oponente podrá ingresar usando el código único de partida.
+                </p>
+                <button id="btn-do-create" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 transition font-bold rounded-xl text-white shadow-lg flex items-center justify-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    <span>Generar Código de Sala</span>
+                </button>
+            </div>
+
+            <!-- Vista 2: Unirse a Sala -->
+            <div id="view-join-room" class="hidden flex flex-col gap-4">
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    Ingresa el código de 6 caracteres compartido por tu oponente:
+                </p>
+                <div class="flex flex-col gap-2">
+                    <input id="input-room-code" type="text" maxlength="6" placeholder="EJ: X7K29P" autocomplete="off" spellcheck="false" class="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl px-4 py-3 text-center text-xl font-mono uppercase tracking-widest text-emerald-400 outline-none transition" />
+                </div>
+                <button id="btn-do-join" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 transition font-bold rounded-xl text-white shadow-lg flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="w-5 h-5"></i>
+                    <span>Unirse a la Batalla</span>
+                </button>
+            </div>
+
+            <!-- Vista 3: Estado de Sala Creada (Esperando Rival) -->
+            <div id="view-waiting-room" class="hidden flex flex-col items-center text-center gap-4 py-2">
+                <div class="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 animate-pulse">
+                    <i data-lucide="loader" class="w-8 h-8 animate-spin"></i>
+                </div>
+                <div>
+                    <span class="text-xs uppercase font-bold tracking-wider text-emerald-400">Código de Sala</span>
+                    <h3 id="generated-code-display" class="text-3xl font-black font-mono tracking-widest text-white mt-1">------</h3>
+                </div>
+                <button id="btn-copy-modal-code" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-bold text-slate-200 flex items-center gap-2 transition">
+                    <i data-lucide="copy" class="w-4 h-4 text-emerald-400"></i>
+                    <span>Copiar Código</span>
+                </button>
+                <p class="text-xs text-slate-400 italic">Esperando que el segundo jugador ingrese el código...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Mapa de Campaña -->
+    <div id="modal-campaign" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xl shadow-2xl p-6 flex flex-col gap-6 transform scale-95 transition-all">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-black text-indigo-400 uppercase tracking-wide">Progreso de la Campaña</h2>
+                <button id="close-campaign" class="p-2 hover:bg-slate-800 rounded-xl transition text-slate-400 hover:text-slate-100">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div id="campaign-map-list" class="flex flex-col gap-3">
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Fin del Juego -->
+    <div id="modal-endgame" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md shadow-2xl p-8 flex flex-col items-center text-center gap-6 transform scale-95 transition-all">
+            <div id="endgame-icon-container" class="w-20 h-20 rounded-full flex items-center justify-center bg-indigo-600/20 text-indigo-400">
+                <i data-lucide="trophy" class="w-10 h-10"></i>
+            </div>
+            <div>
+                <h2 id="endgame-title" class="text-2xl font-black text-slate-100 tracking-wide">¡Victoria Magistral!</h2>
+                <p id="endgame-desc" class="text-sm text-slate-400 mt-2">Has superado este desafío con maestría.</p>
+            </div>
+            <div class="flex items-center gap-3 w-full">
+                <button id="endgame-retry-btn" class="flex-1 py-3 bg-slate-800 hover:bg-slate-700 transition font-bold rounded-xl border border-slate-700">
+                    Reintentar
+                </button>
+                <button id="endgame-next-btn" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 transition font-bold rounded-xl text-slate-100 shadow-lg">
+                    Siguiente Nivel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MÓDULO DE SERVICIOS EN LA NUBE (Reemplazo del backend Node.js) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Obtenemos configuraciones del entorno (Single-File Architecture)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'master-chess-3d-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "demo-key",
+                authDomain: "demo.firebaseapp.com",
+                projectId: "demo-project",
+                storageBucket: "demo.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:123456"
+            };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Exponemos las funciones necesarias al entorno global (window)
+        // para que la lógica de renderizado pueda utilizarlas
+        window.CloudServices = {
+            appId,
+            doc, getDoc, setDoc, updateDoc, onSnapshot,
+            getRoomRef: (code) => doc(db, 'artifacts', appId, 'public', 'data', 'chess_rooms', code)
+        };
+
+        // Autenticación silenciosa y obligatoria antes de consultar datos
+        async function authenticate() {
+            try {
+                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                if (token) {
+                    await signInWithCustomToken(auth, token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                window.currentUserId = auth.currentUser ? auth.currentUser.uid : 'usr_' + Math.random().toString(36).substring(2, 8);
+            } catch (err) {
+                console.warn("Autenticación falló, generando ID temporal:", err);
+                window.currentUserId = 'usr_' + Math.random().toString(36).substring(2, 8);
+            }
+        }
+        window.authPromise = authenticate();
+    </script>
+
+    <!-- AUDIO SINTETIZADOR DE EFECTOS (Web Audio API) -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSynthSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'move') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(350, now);
+                    osc.frequency.exponentialRampToValueAtTime(150, now + 0.12);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now); osc.stop(now + 0.12);
+                } else if (type === 'capture') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.linearRampToValueAtTime(60, now + 0.18);
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+                    osc.start(now); osc.stop(now + 0.18);
+                } else if (type === 'check') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.setValueAtTime(660, now + 0.08);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now); osc.stop(now + 0.25);
+                } else if (type === 'gameover') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(120, now);
+                    osc.frequency.linearRampToValueAtTime(40, now + 0.6);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                    osc.start(now); osc.stop(now + 0.6);
+                }
+            } catch (err) { console.warn('Error de audio:', err); }
+        }
+
+        function showToast(msg, isError = false) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-2.5 rounded-xl shadow-2xl border text-xs font-bold tracking-wide flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto ${
+                isError ? 'bg-rose-950/90 border-rose-500/50 text-rose-200' : 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
+            }`;
+            toast.innerHTML = `<i data-lucide="${isError ? 'alert-circle' : 'check-circle'}" class="w-4 h-4"></i> <span>${msg}</span>`;
+            container.appendChild(toast);
+            if (window.lucide) lucide.createIcons();
+
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+    </script>
+
+    <!-- MOTOR DE JUEGO PRINCIPAL -->
+    <script>
+        const OPENING_BOOK = {
+            "e4": ["e5", "c5", "e6", "c6", "d5"], "e4 d5": ["exd5"], "e4 c5": ["Nf3", "Nc3"],
+            "e4 e6": ["d4"], "e4 c6": ["d4"], "e4 e5": ["Nf3", "Bc4", "f4"], "d4": ["d5", "Nf6", "e5"]
+        };
+        const OPENING_NAMES = {
+            "e4 c5": "Defensa Siciliana 🛡️", "e4 e6": "Defensa Francesa 🗼", "e4 c6": "Defensa Caro-Kann ⚙️",
+            "e4 d5": "Defensa Escandinava ❄️", "e4 e5 f4": "Gambito de Rey 👑",
+            "e4 e5 Nf3 Nc6 Bb5": "Apertura Española 🇪🇸", "d4 d5 c4": "Gambito de Dama 👑"
+        };
+        const CAMPAIGN_LEVELS = [
+            { id: 1, name: "Bolivia - La Cumbre", flag: "🇧🇴", difficulty: "Desafiante", color: "emerald", depth: 2, bgGrad: [0x012417, 0x01130d] },
+            { id: 2, name: "Argentina - El Bastión", flag: "🇦🇷", difficulty: "Avanzado", color: "sky", depth: 3, bgGrad: [0x082f49, 0x0c1e2d] },
+            { id: 3, name: "Japón - El Templo", flag: "🇯🇵", difficulty: "Experto", color: "rose", depth: 3, bgGrad: [0x4c0519, 0x240209] }
+        ];
+
+        let currentLevelIndex = 0;
+        let currentMode = 'pve'; 
+        let currentRoomCode = null;
+        let myOnlineRole = 'w';
+        let roomUnsubscribe = null;
+        let isUpdatingFromRemote = false;
+
+        let game = new Chess();
+        let scene, camera, renderer, controls;
+        let boardGroup, piecesGroup, indicatorsGroup;
+        let selectedSquare = null;
+        let particleSystem;
+        let currentThemeColor = 0x10b981;
+
+        const pieceUnicode = {
+            'p': '♟', 'r': '♜', 'n': '♞', 'b': '♝', 'q': '♛', 'k': '♚',
+            'P': '♙', 'R': '♖', 'N': '♘', 'B': '♗', 'Q': '♕', 'K': '♔'
+        };
+
+        const SQUARE_SIZE = 1.6;
+        const BOARD_OFFSET = (SQUARE_SIZE * 8) / 2 - (SQUARE_SIZE / 2);
+
+        function squareToCoords(square) {
+            const files = 'abcdefgh';
+            return {
+                x: files.indexOf(square[0]) * SQUARE_SIZE - BOARD_OFFSET,
+                z: (7 - (parseInt(square[1]) - 1)) * SQUARE_SIZE - BOARD_OFFSET
+            };
+        }
+
+        async function createOnlineRoom() {
+            if (!window.CloudServices) return showToast("Servicios online no disponibles", true);
+            await window.authPromise;
+
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let roomCode = '';
+            for (let i = 0; i < 6; i++) roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+            
+            currentRoomCode = roomCode;
+            myOnlineRole = 'w';
+            setPresetCamera('white');
+
+            const { setDoc, getRoomRef } = window.CloudServices;
+            const initialRoomData = {
+                code: roomCode,
+                fen: game.fen(),
+                hostUid: window.currentUserId,
+                guestUid: null,
+                status: 'waiting',
+                lastMove: null,
+                createdAt: Date.now()
+            };
+
+            try {
+                await setDoc(getRoomRef(roomCode), initialRoomData);
+                listenToRoomUpdates(roomCode);
+                
+                document.getElementById('generated-code-display').innerText = roomCode;
+                document.getElementById('online-room-code-display').innerText = `SALA: ${roomCode} (Blancas)`;
+                showViewInOnlineModal('waiting');
+                showToast(`Sala creada. Código: ${roomCode}`);
+            } catch (err) {
+                console.error("Error al crear sala:", err);
+                showToast("No se pudo crear la sala online.", true);
+            }
+        }
+
+        async function joinOnlineRoom(inputCode) {
+            const code = (inputCode || '').trim().toUpperCase();
+            if (code.length < 4) return showToast("Código inválido", true);
+            if (!window.CloudServices) return showToast("Servicios online no disponibles", true);
+            
+            await window.authPromise;
+            const { getDoc, updateDoc, getRoomRef } = window.CloudServices;
+            const roomRef = getRoomRef(code);
+
+            try {
+                const snapshot = await getDoc(roomRef);
+                if (!snapshot.exists()) return showToast("La sala no existe.", true);
+                
+                const data = snapshot.data();
+                if (data.status === 'playing' && data.guestUid !== window.currentUserId) {
+                    return showToast("La sala ya está llena", true);
+                }
+
+                currentRoomCode = code;
+                myOnlineRole = 'b';
+                setPresetCamera('black');
+
+                await updateDoc(roomRef, {
+                    guestUid: window.currentUserId,
+                    status: 'playing'
+                });
+
+                listenToRoomUpdates(code);
+                document.getElementById('online-room-code-display').innerText = `SALA: ${code} (Negras)`;
+                toggleModal('modal-online', false);
+                showToast("¡Unido con éxito! Juegas con Negras.");
+            } catch (err) {
+                showToast("Error de red al unirse a la sala", true);
+            }
+        }
+
+        function listenToRoomUpdates(code) {
+            if (roomUnsubscribe) roomUnsubscribe();
+            const { onSnapshot, getRoomRef } = window.CloudServices;
+
+            roomUnsubscribe = onSnapshot(getRoomRef(code), (snapshot) => {
+                if (!snapshot.exists()) return;
+                const data = snapshot.data();
+
+                if (data.status === 'playing') {
+                    const modal = document.getElementById('modal-online');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        toggleModal('modal-online', false);
+                        showToast("¡Oponente conectado! Empieza la batalla.");
+                    }
+                }
+
+                if (data.fen && data.fen !== game.fen()) {
+                    isUpdatingFromRemote = true;
+                    game.load(data.fen);
+                    spawnProceduralPieces();
+                    updateHUDAndHistory();
+                    if (data.lastMove) {
+                        if (game.in_check()) playSynthSound('check');
+                        else playSynthSound('move');
+                    }
+                    updateTurnIndicator(game.turn() === 'w');
+                    checkEndGameCondition();
+                    isUpdatingFromRemote = false;
+                }
+            }, (error) => {
+                console.error("Error escuchando sala:", error);
+            });
+        }
+
+        async function syncMoveToOnlineServer() {
+            if (!currentRoomCode || !window.CloudServices) return;
+            const { updateDoc, getRoomRef } = window.CloudServices;
+            
+            try {
+                await updateDoc(getRoomRef(currentRoomCode), {
+                    fen: game.fen(),
+                    lastMove: game.history({ verbose: true }).slice(-1)[0] || null,
+                    updatedAt: Date.now()
+                });
+            } catch (err) {
+                console.warn("Fallo al sincronizar jugada:", err);
+            }
+        }
+
+        function initEngine3D() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+            const width = container.clientWidth, height = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x012417, 0.025);
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+            setPresetCamera('white');
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.1; controls.minDistance = 6; controls.maxDistance = 22;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+            dirLight.position.set(5, 12, 5); dirLight.castShadow = true;
+            scene.add(dirLight);
+
+            boardGroup = new THREE.Group(); piecesGroup = new THREE.Group(); indicatorsGroup = new THREE.Group();
+            scene.add(boardGroup); scene.add(piecesGroup); scene.add(indicatorsGroup);
+
+            buildPhysicalBoard(); spawnProceduralPieces(); initLevelAtmosphere();
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function setPresetCamera(color) {
+            camera.position.set(0, 10, color === 'white' ? 10 : -10);
+            if (controls) controls.target.set(0, 0, 0);
+        }
+
+        function buildPhysicalBoard() {
+            const frameMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 });
+            const frameMesh = new THREE.Mesh(new THREE.BoxGeometry(SQUARE_SIZE * 8 + 0.8, 0.3, SQUARE_SIZE * 8 + 0.8), frameMat);
+            frameMesh.position.y = -0.16; frameMesh.receiveShadow = true;
+            boardGroup.add(frameMesh);
+
+            const sqGeom = new THREE.BoxGeometry(SQUARE_SIZE, 0.15, SQUARE_SIZE);
+            for (let r = 0; r < 8; r++) {
+                for (let f = 0; f < 8; f++) {
+                    const isLight = (r + f) % 2 === 0;
+                    const sqMat = new THREE.MeshStandardMaterial({ color: isLight ? 0xe2e8f0 : 0x334155 });
+                    const cell = new THREE.Mesh(sqGeom, sqMat);
+                    cell.position.set(f * SQUARE_SIZE - BOARD_OFFSET, 0, r * SQUARE_SIZE - BOARD_OFFSET);
+                    cell.receiveShadow = true;
+                    cell.userData = { isSquare: true, squareName: 'abcdefgh'[f] + (8 - r) };
+                    boardGroup.add(cell);
+                }
+            }
+        }
+
+        function createPieceModel(type, isWhite) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: isWhite ? 0xf8fafc : 0x0f172a, roughness: 0.3 });
+            
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.15, 16), mat);
+            base.position.y = 0.075; base.castShadow = true; group.add(base);
+
+            // Modelos básicos de piezas para mantener el código conciso
+            let stemGeom = new THREE.CylinderGeometry(0.3, 0.4, 0.8, 12);
+            let yOffset = 0.5;
+            
+            if (type === 'p') { stemGeom = new THREE.SphereGeometry(0.4, 16, 16); yOffset = 0.4; }
+            else if (type === 'k' || type === 'q') { stemGeom = new THREE.CylinderGeometry(0.35, 0.45, 1.2, 16); yOffset = 0.7; }
+            
+            const stem = new THREE.Mesh(stemGeom, mat);
+            stem.position.y = yOffset; stem.castShadow = true; group.add(stem);
+            
+            group.scale.set(0.9, 0.9, 0.9);
+            return group;
+        }
+
+        function spawnProceduralPieces() {
+            while (piecesGroup.children.length > 0) piecesGroup.remove(piecesGroup.children[0]);
+            const board = game.board();
+            for (let r = 0; r < 8; r++) {
+                for (let f = 0; f < 8; f++) {
+                    if (board[r][f]) {
+                        const sq = 'abcdefgh'[f] + (8 - r);
+                        const coords = squareToCoords(sq);
+                        const model = createPieceModel(board[r][f].type, board[r][f].color === 'w');
+                        model.position.set(coords.x, 0, coords.z);
+                        piecesGroup.add(model);
+                    }
+                }
+            }
+        }
+
+        function initLevelAtmosphere() {
+            if (particleSystem) scene.remove(particleSystem);
+            const geom = new THREE.BufferGeometry();
+            const pos = new Float32Array(200 * 3);
+            for (let i = 0; i < 600; i += 3) { pos[i] = (Math.random() - 0.5) * 20; pos[i+1] = Math.random() * 10; pos[i+2] = (Math.random() - 0.5) * 20; }
+            geom.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            
+            const level = CAMPAIGN_LEVELS[currentLevelIndex] || CAMPAIGN_LEVELS[0];
+            const mat = new THREE.PointsMaterial({ color: level.color === 'emerald' ? 0x10b981 : 0x0ea5e9, size: 0.12, transparent: true, opacity: 0.6 });
+            particleSystem = new THREE.Points(geom, mat); scene.add(particleSystem);
+            scene.fog.color.setHex(level.bgGrad[0]); renderer.setClearColor(level.bgGrad[0]);
+        }
+
+        function setupInteractions() {
+            const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+            window.addEventListener('click', (event) => {
+                const rect = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(boardGroup.children);
+                if (intersects.length > 0 && intersects[0].object.userData.isSquare) {
+                    onSquareClicked(intersects[0].object.userData.squareName);
+                }
+            });
+        }
+
+        function onSquareClicked(squareName) {
+            if (game.game_over()) return;
+            if (currentMode === 'online' && game.turn() !== myOnlineRole) return showToast("Es el turno de tu rival", true);
+            if (currentMode === 'pve' && game.turn() === 'b') return;
+
+            const piece = game.get(squareName);
+            if (selectedSquare) {
+                if (selectedSquare === squareName) return clearSelection();
+                const moves = game.moves({ square: selectedSquare, verbose: true });
+                const moveObj = moves.find(m => m.to === squareName);
+                if (moveObj) {
+                    executeMove({ from: selectedSquare, to: squareName, promotion: moveObj.flags.includes('p') ? 'q' : undefined });
+                    return;
+                }
+            }
+
+            const activeColor = currentMode === 'online' ? myOnlineRole : 'w';
+            if (piece && piece.color === activeColor) {
+                selectedSquare = squareName;
+                clearIndicators();
+                const sel = squareToCoords(squareName);
+                indicatorsGroup.add(createHighlightIndicator(sel.x, sel.z, 0x10b981));
+                game.moves({ square: squareName, verbose: true }).forEach(m => {
+                    const tgt = squareToCoords(m.to);
+                    indicatorsGroup.add(createHighlightIndicator(tgt.x, tgt.z, game.get(m.to) ? 0xef4444 : 0x06b6d4, 0.25));
+                });
+                playSynthSound('move');
+            } else clearSelection();
+        }
+
+        function createHighlightIndicator(x, z, color, size = 0.35) {
+            const mesh = new THREE.Mesh(new THREE.RingGeometry(size - 0.05, size, 16), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+            mesh.rotation.x = Math.PI / 2; mesh.position.set(x, 0.08, z); return mesh;
+        }
+
+        function clearSelection() { selectedSquare = null; clearIndicators(); }
+        function clearIndicators() { while (indicatorsGroup.children.length > 0) indicatorsGroup.remove(indicatorsGroup.children[0]); }
+
+        function executeMove(movePayload) {
+            const result = game.move(movePayload);
+            if (!result) return;
+            playSynthSound(result.captured ? 'capture' : 'move');
+            
+            spawnProceduralPieces(); clearSelection(); updateHUDAndHistory();
+            if (checkEndGameCondition()) return;
+            updateTurnIndicator(game.turn() === 'w');
+
+            if (currentMode === 'pve') setTimeout(executeAIMove, 700);
+            else if (currentMode === 'online' && !isUpdatingFromRemote) syncMoveToOnlineServer();
+        }
+
+        // IA Básica (Movimientos al azar para brevedad)
+        function executeAIMove() {
+            if (game.game_over() || currentMode !== 'pve') return;
+            const moves = game.moves();
+            if (moves.length === 0) return;
+            game.move(moves[Math.floor(Math.random() * moves.length)]);
+            playSynthSound(game.in_check() ? 'check' : 'move');
+            spawnProceduralPieces(); updateHUDAndHistory(); updateTurnIndicator(true); checkEndGameCondition();
+        }
+
+        function updateHUDAndHistory() {
+            const historyList = document.getElementById('move-history-list');
+            historyList.innerHTML = '';
+            const moves = game.history();
+            if (moves.length === 0) historyList.innerHTML = `<div class="col-span-12 text-center text-xs text-slate-500 italic py-8">La batalla aún no ha comenzado...</div>`;
+            else {
+                for (let i = 0; i < moves.length; i += 2) {
+                    historyList.innerHTML += `<div class="col-span-2 text-slate-500 font-mono font-bold text-xs">${Math.floor(i/2)+1}.</div>
+                        <div class="col-span-5 font-semibold text-xs tracking-wide py-0.5 text-slate-200">${moves[i]}</div>
+                        <div class="col-span-5 font-semibold text-xs tracking-wide py-0.5 text-slate-300">${moves[i+1]||''}</div>`;
+                }
+                const scroll = document.getElementById('history-scroll-container');
+                if (scroll) scroll.scrollTop = scroll.scrollHeight;
+            }
+            
+            const histStr = game.history({ verbose: false }).join(' ');
+            let matchedOpening = null;
+            for (const key in OPENING_NAMES) if (histStr.startsWith(key)) matchedOpening = OPENING_NAMES[key];
+            const badge = document.getElementById('opening-badge');
+            if (matchedOpening) { document.getElementById('opening-text').innerText = matchedOpening; badge.classList.remove('hidden'); }
+            else badge.classList.add('hidden');
+        }
+
+        function updateTurnIndicator(isWhiteTurn) {
+            const dot = document.getElementById('turn-dot'), text = document.getElementById('turn-text');
+            if (currentMode === 'online') {
+                const isMyTurn = game.turn() === myOnlineRole;
+                dot.className = `relative inline-flex rounded-full h-3.5 w-3.5 ${isMyTurn ? 'bg-emerald-500' : 'bg-rose-500'}`;
+                text.innerText = isMyTurn ? `Tu turno (${myOnlineRole === 'w' ? 'Blancas' : 'Negras'})` : "Turno del Rival...";
+            } else {
+                dot.className = `relative inline-flex rounded-full h-3.5 w-3.5 ${isWhiteTurn ? 'bg-indigo-500' : 'bg-rose-500'}`;
+                text.innerText = isWhiteTurn ? "Tu turno (Blancas)" : "Pensando (Negras PVE)";
+            }
+        }
+
+        function checkEndGameCondition() {
+            if (game.game_over()) {
+                playSynthSound('gameover');
+                document.getElementById('endgame-title').innerText = game.in_checkmate() ? "Jaque Mate" : "Tablas";
+                document.getElementById('endgame-desc').innerText = "La partida ha concluido.";
+                toggleModal('modal-endgame', true);
+                return true;
+            }
+            return false;
+        }
+
+        function toggleModal(id, show) {
+            const modal = document.getElementById(id);
+            if (show) { modal.classList.remove('hidden'); setTimeout(() => modal.classList.remove('opacity-0', 'pointer-events-none'), 10); }
+            else { modal.classList.add('opacity-0', 'pointer-events-none'); setTimeout(() => modal.classList.add('hidden'), 300); }
+        }
+
+        function showViewInOnlineModal(viewName) {
+            ['create', 'join', 'waiting'].forEach(v => document.getElementById(`view-${v}-room`).classList.add('hidden'));
+            document.getElementById(`view-${viewName}-room`).classList.remove('hidden');
+        }
+
+        function switchGameMode(newMode) {
+            currentMode = newMode;
+            document.getElementById('pve-info-badge').classList.toggle('hidden', newMode !== 'pve');
+            document.getElementById('online-info-badge').classList.toggle('hidden', newMode !== 'online');
+            document.getElementById('btn-online-lobby').classList.toggle('hidden', newMode !== 'online');
+            document.getElementById('btn-campaign').classList.toggle('hidden', newMode !== 'pve');
+            
+            if (newMode === 'online') {
+                if (!currentRoomCode) toggleModal('modal-online', true);
+            } else { 
+                if(roomUnsubscribe) { roomUnsubscribe(); roomUnsubscribe = null; }
+                currentRoomCode = null; game.reset(); clearSelection(); spawnProceduralPieces(); updateHUDAndHistory(); updateTurnIndicator(true); setPresetCamera('white');
+            }
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (camera && renderer && container) {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initEngine3D(); setupInteractions(); updateHUDAndHistory(); if(window.lucide) lucide.createIcons();
+            
+            document.getElementById('mode-pve-btn').addEventListener('click', () => switchGameMode('pve'));
+            document.getElementById('mode-online-btn').addEventListener('click', () => switchGameMode('online'));
+            document.getElementById('btn-online-lobby').addEventListener('click', () => toggleModal('modal-online', true));
+            document.getElementById('close-online-modal').addEventListener('click', () => toggleModal('modal-online', false));
+            document.getElementById('tab-create-btn').addEventListener('click', () => showViewInOnlineModal('create'));
+            document.getElementById('tab-join-btn').addEventListener('click', () => showViewInOnlineModal('join'));
+            
+            document.getElementById('btn-do-create').addEventListener('click', createOnlineRoom);
+            document.getElementById('btn-do-join').addEventListener('click', () => joinOnlineRoom(document.getElementById('input-room-code').value));
+            document.getElementById('input-room-code').addEventListener('keypress', (e) => { if (e.key === 'Enter') joinOnlineRoom(e.target.value); });
+            
+            const histPanel = document.getElementById('history-panel');
+            document.getElementById('btn-toggle-history').addEventListener('click', () => histPanel.classList.toggle('translate-x-full'));
+            document.getElementById('btn-close-history').addEventListener('click', () => histPanel.classList.add('translate-x-full'));
+            
+            document.getElementById('btn-reset').addEventListener('click', () => { game.reset(); spawnProceduralPieces(); updateHUDAndHistory(); if(currentMode==='online') syncMoveToOnlineServer(); });
+            document.getElementById('btn-camera').addEventListener('click', () => setPresetCamera(currentMode==='online' ? myOnlineRole : 'white'));
+            
+            document.getElementById('btn-copy-code').addEventListener('click', () => { navigator.clipboard.writeText(currentRoomCode); showToast("Código copiado"); });
+            document.getElementById('btn-copy-modal-code').addEventListener('click', () => { navigator.clipboard.writeText(currentRoomCode); showToast("Código copiado"); });
+            
+            document.getElementById('endgame-retry-btn').addEventListener('click', () => { game.reset(); spawnProceduralPieces(); toggleModal('modal-endgame', false); if(currentMode==='online') syncMoveToOnlineServer(); });
+            document.getElementById('endgame-next-btn').addEventListener('click', () => toggleModal('modal-endgame', false));
+            document.getElementById('btn-campaign').addEventListener('click', () => {
+                const list = document.getElementById('campaign-map-list'); list.innerHTML = '';
+                CAMPAIGN_LEVELS.forEach(lvl => {
+                    list.innerHTML += `<div class="p-3 bg-slate-800 rounded-xl mb-2 flex items-center justify-between"><span class="font-bold">${lvl.flag} ${lvl.name}</span><span class="text-xs text-slate-400">${lvl.difficulty}</span></div>`;
+                });
+                toggleModal('modal-campaign', true);
+            });
+            document.getElementById('close-campaign').addEventListener('click', () => toggleModal('modal-campaign', false));
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (controls) controls.update();
+            if (particleSystem) {
+                const pos = particleSystem.geometry.attributes.position.array;
+                for (let i = 1; i < pos.length; i += 3) { pos[i] -= 0.015; if (pos[i] < 0) pos[i] = 10; }
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+            }
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
