@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Bomberman Retro Classic</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Press Start 2P', monospace;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+      background-color: #0d1117;
+    }
+    canvas {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .pixel-border {
+      box-shadow: 
+        0 -4px 0 0 #27272a,
+        0 4px 0 0 #27272a,
+        -4px 0 0 0 #27272a,
+        4px 0 0 0 #27272a;
+    }
+    .pixel-btn {
+      transition: transform 0.05s ease, background-color 0.1s ease;
+      box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+    }
+    .pixel-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 0 rgba(0,0,0,0.5);
+    }
+    /* CRT Scanline effect (subtle toggle) */
+    .scanlines {
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.25) 50%
+      ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.01),
+        rgba(0, 0, 255, 0.03)
+      );
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen flex flex-col items-center justify-between p-2 sm:p-4 select-none overflow-x-hidden">
+
+  <!-- Top Arcade Header & Stats HUD -->
+  <header class="w-full max-w-2xl flex flex-col items-center gap-2 mb-2">
+    <div class="flex items-center justify-between w-full px-2 py-1 bg-zinc-900 border-2 border-zinc-700 rounded-lg text-[10px] sm:text-xs">
+      <div class="flex items-center gap-2 text-yellow-400">
+        <span>SCORE:</span>
+        <span id="hud-score" class="text-white">00000</span>
+      </div>
+      <div class="flex items-center gap-2 text-blue-400">
+        <span>TIME:</span>
+        <span id="hud-time" class="text-white">200</span>
+      </div>
+      <div class="flex items-center gap-2 text-red-400">
+        <span>LIVES:</span>
+        <span id="hud-lives" class="text-white">3</span>
+      </div>
+      <div class="flex items-center gap-2 text-green-400">
+        <span>STAGE:</span>
+        <span id="hud-stage" class="text-white">1</span>
+      </div>
+    </div>
+
+    <!-- Inventory / Powerups indicator -->
+    <div class="flex items-center justify-between w-full px-3 py-1 bg-zinc-800/80 rounded border border-zinc-700 text-[9px] sm:text-[10px] text-zinc-300">
+      <div class="flex items-center gap-3">
+        <span>💣 BOMBS: <span id="hud-bombs" class="text-yellow-300 font-bold">1/1</span></span>
+        <span>🔥 FIRE: <span id="hud-range" class="text-orange-400 font-bold">1</span></span>
+        <span>⚡ SPEED: <span id="hud-speed" class="text-cyan-300 font-bold">NORM</span></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-sound" class="px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 rounded text-zinc-200 text-[8px] sm:text-[10px]">
+          🔊 SFX: ON
+        </button>
+        <button id="btn-pause" class="px-2 py-0.5 bg-zinc-700 hover:bg-zinc-600 rounded text-zinc-200 text-[8px] sm:text-[10px]">
+          ⏸ PAUSE
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Canvas Container with CRT Frame -->
+  <main class="relative w-full max-w-2xl flex justify-center items-center">
+    <div class="relative p-2 bg-zinc-900 border-4 border-zinc-700 rounded-xl shadow-2xl overflow-hidden max-w-full">
+      <!-- Game Canvas -->
+      <canvas id="gameCanvas" width="480" height="416" class="block rounded shadow-inner max-w-full h-auto bg-[#4ea32a]"></canvas>
+      
+      <!-- Scanline Overlay -->
+      <div id="scanline-overlay" class="scanlines absolute inset-2 rounded pointer-events-none"></div>
+
+      <!-- Start / Game Over / Stage Clear Overlay -->
+      <div id="overlay-screen" class="absolute inset-2 bg-black/80 flex flex-col items-center justify-center p-4 text-center rounded">
+        <h1 id="overlay-title" class="text-xl sm:text-3xl text-yellow-400 mb-3 tracking-widest leading-relaxed drop-shadow-[0_4px_0_#92400e]">
+          BOMBERMAN
+        </h1>
+        <p id="overlay-desc" class="text-[10px] sm:text-xs text-zinc-300 mb-6 max-w-xs leading-5">
+          Elimina a todos los globos (Balloms) y encuentra la puerta escondida bajo los ladrillos.
+        </p>
+        <button id="btn-start" class="pixel-btn px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded font-bold text-xs sm:text-sm tracking-wider border-2 border-red-400">
+          START GAME
+        </button>
+        <div class="mt-4 text-[8px] sm:text-[9px] text-zinc-400 flex flex-col gap-1">
+          <p>Teclado: Flechas o WASD para moverte</p>
+          <p>Espacio / Enter: Colocar Bomba</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Mobile Controls (Virtual D-Pad & Bomb Button) -->
+  <footer class="w-full max-w-2xl mt-2 flex items-center justify-between px-2 sm:px-6 py-2 select-none">
+    <!-- D-PAD -->
+    <div class="relative w-36 h-36 sm:w-40 sm:h-40 bg-zinc-800/80 rounded-full border-2 border-zinc-700 p-1 flex items-center justify-center shadow-lg">
+      <!-- Up -->
+      <button id="ctrl-up" class="pixel-btn absolute top-1 left-1/2 -translate-x-1/2 w-11 h-11 bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 rounded flex items-center justify-center text-lg text-zinc-200">
+        ▲
+      </button>
+      <!-- Down -->
+      <button id="ctrl-down" class="pixel-btn absolute bottom-1 left-1/2 -translate-x-1/2 w-11 h-11 bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 rounded flex items-center justify-center text-lg text-zinc-200">
+        ▼
+      </button>
+      <!-- Left -->
+      <button id="ctrl-left" class="pixel-btn absolute left-1 top-1/2 -translate-y-1/2 w-11 h-11 bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 rounded flex items-center justify-center text-lg text-zinc-200">
+        ◀
+      </button>
+      <!-- Right -->
+      <button id="ctrl-right" class="pixel-btn absolute right-1 top-1/2 -translate-y-1/2 w-11 h-11 bg-zinc-700 hover:bg-zinc-600 active:bg-zinc-500 rounded flex items-center justify-center text-lg text-zinc-200">
+        ▶
+      </button>
+      <!-- Center hub -->
+      <div class="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-700 pointer-events-none"></div>
+    </div>
+
+    <!-- Quick info center for touch screen players -->
+    <div class="hidden sm:flex flex-col items-center text-[8px] text-zinc-400 text-center gap-1">
+      <span class="text-zinc-300 font-bold">CONTROLES MÓVILES</span>
+      <span>D-Pad = Movimiento</span>
+      <span>BOMB = Detonador</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col items-center justify-center gap-2">
+      <button id="ctrl-bomb" class="pixel-btn w-20 h-20 sm:w-24 sm:h-24 bg-red-600 hover:bg-red-500 active:bg-red-700 rounded-full border-4 border-red-800 flex flex-col items-center justify-center text-white shadow-xl">
+        <span class="text-xl sm:text-2xl">💣</span>
+        <span class="text-[9px] sm:text-[10px] mt-1 font-bold">BOMB</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Retro Audio Synthesizer & Game Logic -->
+  <script>
+    /* ==========================================================================
+       1. RETRO AUDIO SYNTHESIZER (Web Audio API - No external dependencies)
+       ========================================================================== */
+    class RetroAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type, duration, startVol = 0.2, endVol = 0.001) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(startVol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(endVol, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {
+          // ignore audio restriction errors
+        }
+      }
+
+      playNoise(duration, startVol = 0.3) {
+        if (!this.enabled || !this.ctx) return;
+        try {
+          const bufferSize = this.ctx.sampleRate * duration;
+          const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          const noise = this.ctx.createBufferSource();
+          noise.buffer = buffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+          filter.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + duration);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(startVol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          noise.start();
+          noise.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      bombPlant() {
+        this.playTone(480, 'sine', 0.08, 0.2);
+        setTimeout(() => this.playTone(320, 'sine', 0.1, 0.2), 40);
+      }
+
+      explosion() {
+        this.playNoise(0.5, 0.4);
+        this.playTone(120, 'sawtooth', 0.4, 0.3, 0.01);
+      }
+
+      powerup() {
+        const notes = [330, 392, 523, 659];
+        notes.forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 'square', 0.08, 0.15), idx * 60);
+        });
+      }
+
+      enemyHit() {
+        this.playTone(550, 'triangle', 0.1, 0.2);
+        setTimeout(() => this.playTone(200, 'sawtooth', 0.2, 0.2), 70);
+      }
+
+      playerDie() {
+        const notes = [440, 415, 392, 349, 311, 261];
+        notes.forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 'sawtooth', 0.15, 0.25), idx * 100);
+        });
+      }
+
+      stageClear() {
+        const notes = [523, 659, 784, 1046, 784, 1046];
+        notes.forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 'square', 0.14, 0.2), idx * 110);
+        });
+      }
+
+      step() {
+        this.playTone(160, 'triangle', 0.03, 0.05);
+      }
+    }
+
+    const sound = new RetroAudio();
+
+    /* ==========================================================================
+       2. GAME CONSTANTS & CONFIGURATION
+       ========================================================================== */
+    const COLS = 15;
+    const ROWS = 13;
+    const TILE_SIZE = 32; // 15*32 = 480 width, 13*32 = 416 height
+
+    // Tile Types
+    const TILE_EMPTY = 0;
+    const TILE_WALL = 1;      // Grey indestructible pillars
+    const TILE_BRICK = 2;     // Destructible brick blocks
+
+    // Powerup Types
+    const PWR_BOMB = 'bomb';
+    const PWR_FIRE = 'fire';
+    const PWR_SPEED = 'speed';
+    const PWR_DOOR = 'door';
+
+    // Game States
+    const STATE_MENU = 'MENU';
+    const STATE_PLAYING = 'PLAYING';
+    const STATE_PAUSED = 'PAUSED';
+    const STATE_STAGE_CLEAR = 'STAGE_CLEAR';
+    const STATE_GAME_OVER = 'GAME_OVER';
+
+    /* ==========================================================================
+       3. GAME ENGINE & STATE
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    // HUD Elements
+    const hudScore = document.getElementById('hud-score');
+    const hudTime = document.getElementById('hud-time');
+    const hudLives = document.getElementById('hud-lives');
+    const hudStage = document.getElementById('hud-stage');
+    const hudBombs = document.getElementById('hud-bombs');
+    const hudRange = document.getElementById('hud-range');
+    const hudSpeed = document.getElementById('hud-speed');
+    const btnSound = document.getElementById('btn-sound');
+    const btnPause = document.getElementById('btn-pause');
+
+    // Overlay Elements
+    const overlayScreen = document.getElementById('overlay-screen');
+    const overlayTitle = document.getElementById('overlay-title');
+    const overlayDesc = document.getElementById('overlay-desc');
+    const btnStart = document.getElementById('btn-start');
+
+    let gameState = STATE_MENU;
+    let score = 0;
+    let stage = 1;
+    let lives = 3;
+    let stageTimer = 200;
+    let lastTimeTick = 0;
+
+    let map = [];
+    let powerups = [];       // [{gx, gy, type, revealed}]
+    let bombs = [];          // [{gx, gy, x, y, timer, maxTimer, range, owner}]
+    let explosions = [];     // [{gx, gy, cells: [{gx, gy, dir, isEnd}], timer, maxTimer}]
+    let particles = [];      // [{x, y, vx, vy, color, life, maxLife, size}]
+    let enemies = [];        // [Ballom entities]
+    let exitDoor = null;     // {gx, gy, open: false}
+
+    // Player state
+    const player = {
+      x: 32 + 16,
+      y: 32 + 16,
+      radius: 12,
+      speed: 1.8,
+      baseSpeed: 1.8,
+      direction: 'down',
+      isMoving: false,
+      bombsMax: 1,
+      bombRange: 1,
+      hasSpeedUp: false,
+      isDying: false,
+      dieTimer: 0,
+      animTick: 0,
+      invulnerableTimer: 0
+    };
+
+    // Controller input tracking
+    const keys = {
+      up: false,
+      down: false,
+      left: false,
+      right: false,
+      bomb: false
+    };
+
+    /* ==========================================================================
+       4. MAP GENERATION & STAGE SETUP
+       ========================================================================== */
+    function initMap() {
+      map = [];
+      powerups = [];
+      bombs = [];
+      explosions = [];
+      particles = [];
+      enemies = [];
+      exitDoor = null;
+
+      // 1. Build Base Grid (Border walls + Fixed Pillars)
+      for (let r = 0; r < ROWS; r++) {
+        map[r] = [];
+        for (let c = 0; c < COLS; c++) {
+          if (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1) {
+            map[r][c] = TILE_WALL; // Border
+          } else if (r % 2 === 0 && c % 2 === 0) {
+            map[r][c] = TILE_WALL; // Pillars
+          } else {
+            map[r][c] = TILE_EMPTY;
+          }
+        }
+      }
+
+      // Safe cells near player starting zone (1,1)
+      const safeCells = new Set(['1,1', '1,2', '2,1']);
+
+      // 2. Populate Bricks
+      const emptyCells = [];
+      for (let r = 1; r < ROWS - 1; r++) {
+        for (let c = 1; c < COLS - 1; c++) {
+          if (map[r][c] === TILE_EMPTY && !safeCells.has(`${c},${r}`)) {
+            emptyCells.push({ c, r });
+          }
+        }
+      }
+
+      // Shuffle empty cells
+      for (let i = emptyCells.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [emptyCells[i], emptyCells[j]] = [emptyCells[j], emptyCells[i]];
+      }
+
+      // Fill ~55% of available free spaces with bricks
+      const brickCount = Math.floor(emptyCells.length * 0.58);
+      const brickCells = emptyCells.slice(0, brickCount);
+      const remainingFreeCells = emptyCells.slice(brickCount);
+
+      brickCells.forEach(cell => {
+        map[cell.r][cell.c] = TILE_BRICK;
+      });
+
+      // 3. Hide Exit Door under a random brick
+      if (brickCells.length > 0) {
+        const doorIdx = Math.floor(Math.random() * brickCells.length);
+        const doorLoc = brickCells[doorIdx];
+        exitDoor = { gx: doorLoc.c, gy: doorLoc.r, open: false };
+        powerups.push({ gx: doorLoc.c, gy: doorLoc.r, type: PWR_DOOR, revealed: false });
+      }
+
+      // 4. Hide Power-ups under random other bricks
+      const pwrTypes = [PWR_FIRE, PWR_BOMB];
+      if (stage >= 2) pwrTypes.push(PWR_SPEED);
+      if (stage >= 3) pwrTypes.push(PWR_FIRE);
+
+      pwrTypes.forEach(pType => {
+        const candidateBricks = brickCells.filter(b => !(b.c === exitDoor?.gx && b.r === exitDoor?.gy));
+        if (candidateBricks.length > 0) {
+          const pick = candidateBricks[Math.floor(Math.random() * candidateBricks.length)];
+          // Avoid duplicate powerup on same tile
+          if (!powerups.some(p => p.gx === pick.c && p.gy === pick.r)) {
+            powerups.push({ gx: pick.c, gy: pick.r, type: pType, revealed: false });
+          }
+        }
+      });
+
+      // 5. Spawn Enemies (Balloms - Blue Balloons)
+      // Base enemy count increases slightly with stage
+      const enemyCount = Math.min(3 + stage, 8);
+      const enemySpawnCells = remainingFreeCells.filter(c => Math.hypot(c.c - 1, c.r - 1) > 3);
+
+      for (let i = 0; i < enemyCount; i++) {
+        let spawnPos;
+        if (enemySpawnCells.length > i) {
+          spawnPos = enemySpawnCells[i];
+        } else {
+          // fallback to any empty cell away from spawn
+          spawnPos = { c: COLS - 2, r: ROWS - 2 };
+        }
+        enemies.push(createBallom(spawnPos.c * TILE_SIZE + 16, spawnPos.r * TILE_SIZE + 16));
+      }
+
+      // Reset Player Position & State
+      player.x = 1 * TILE_SIZE + 16;
+      player.y = 1 * TILE_SIZE + 16;
+      player.direction = 'down';
+      player.isMoving = false;
+      player.isDying = false;
+      player.dieTimer = 0;
+      player.invulnerableTimer = 60; // 1s grace period on spawn
+
+      stageTimer = 200;
+      lastTimeTick = performance.now();
+      updateHUD();
+    }
+
+    /* ==========================================================================
+       5. ENEMY LOGIC (BALLOM - Classic Blue Balloon)
+       ========================================================================== */
+    function createBallom(x, y) {
+      const dirs = ['up', 'down', 'left', 'right'];
+      return {
+        x: x,
+        y: y,
+        radius: 12,
+        speed: 1.0 + Math.random() * 0.4,
+        direction: dirs[Math.floor(Math.random() * dirs.length)],
+        dirChangeTimer: Math.floor(Math.random() * 60) + 60,
+        animTick: Math.random() * 20,
+        isDying: false,
+        dieTimer: 0
+      };
+    }
+
+    function updateEnemies() {
+      enemies.forEach((enemy) => {
+        if (enemy.isDying) {
+          enemy.dieTimer++;
+          return;
+        }
+
+        enemy.animTick += 0.15;
+        enemy.dirChangeTimer--;
+
+        // Determine target direction
+        let vx = 0;
+        let vy = 0;
+
+        if (enemy.direction === 'left') vx = -enemy.speed;
+        if (enemy.direction === 'right') vx = enemy.speed;
+        if (enemy.direction === 'up') vy = -enemy.speed;
+        if (enemy.direction === 'down') vy = enemy.speed;
+
+        // Attempt move
+        let nextX = enemy.x + vx;
+        let nextY = enemy.y + vy;
+
+        if (canEnemyMoveTo(nextX, nextY, enemy.radius)) {
+          enemy.x = nextX;
+          enemy.y = nextY;
+        } else {
+          // Hit a wall, force change direction
+          enemy.dirChangeTimer = 0;
+        }
+
+        // Randomly pick a new direction when timer ends or when blocked
+        if (enemy.dirChangeTimer <= 0) {
+          enemy.dirChangeTimer = Math.floor(Math.random() * 80) + 40;
+          const available = getValidEnemyDirections(enemy.x, enemy.y, enemy.radius);
+          if (available.length > 0) {
+            enemy.direction = available[Math.floor(Math.random() * available.length)];
+          } else {
+            // Reverse direction if trapped
+            const opp = { up: 'down', down: 'up', left: 'right', right: 'left' };
+            enemy.direction = opp[enemy.direction] || 'down';
+          }
+        }
+
+        // Check collision with Player
+        if (!player.isDying && player.invulnerableTimer <= 0) {
+          const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+          if (dist < player.radius + enemy.radius - 4) {
+            killPlayer();
+          }
+        }
+      });
+
+      // Filter dead enemies
+      enemies = enemies.filter(e => !(e.isDying && e.dieTimer > 25));
+
+      // If all enemies dead, reveal exit door indicator!
+      if (enemies.length === 0 && exitDoor && !exitDoor.open) {
+        exitDoor.open = true;
+      }
+    }
+
+    function getValidEnemyDirections(x, y, radius) {
+      const dirs = [
+        { dir: 'up', dx: 0, dy: -2 },
+        { dir: 'down', dx: 0, dy: 2 },
+        { dir: 'left', dx: -2, dy: 0 },
+        { dir: 'right', dx: 2, dy: 0 }
+      ];
+      return dirs
+        .filter(d => canEnemyMoveTo(x + d.dx, y + d.dy, radius))
+        .map(d => d.dir);
+    }
+
+    function canEnemyMoveTo(x, y, radius) {
+      const minGX = Math.floor((x - radius) / TILE_SIZE);
+      const maxGX = Math.floor((x + radius) / TILE_SIZE);
+      const minGY = Math.floor((y - radius) / TILE_SIZE);
+      const maxGY = Math.floor((y + radius) / TILE_SIZE);
+
+      for (let r = minGY; r <= maxGY; r++) {
+        for (let c = minGX; c <= maxGX; c++) {
+          if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+          if (map[r][c] === TILE_WALL || map[r][c] === TILE_BRICK) return false;
+
+          // Blocked by bombs
+          for (let b of bombs) {
+            if (b.gx === c && b.gy === r) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    /* ==========================================================================
+       6. PLAYER MOVEMENT & CORNER SLIDING (Classic Arcade Polish)
+       ========================================================================== */
+    function updatePlayer() {
+      if (player.isDying) {
+        player.dieTimer++;
+        if (player.dieTimer > 60) {
+          handlePlayerDeath();
+        }
+        return;
+      }
+
+      if (player.invulnerableTimer > 0) {
+        player.invulnerableTimer--;
+      }
+
+      let dx = 0;
+      let dy = 0;
+
+      if (keys.up) { dy -= 1; player.direction = 'up'; }
+      else if (keys.down) { dy += 1; player.direction = 'down'; }
+      else if (keys.left) { dx -= 1; player.direction = 'left'; }
+      else if (keys.right) { dx += 1; player.direction = 'right'; }
+
+      player.isMoving = (dx !== 0 || dy !== 0);
+
+      if (player.isMoving) {
+        player.animTick += 0.2;
+        if (Math.floor(player.animTick) % 4 === 0) {
+          sound.step();
+        }
+
+        const moveSpeed = player.speed;
+        let targetX = player.x + dx * moveSpeed;
+        let targetY = player.y + dy * moveSpeed;
+
+        // Corner sliding / rounding assistance:
+        // Makes passing around corners smooth rather than catching on 1 pixel
+        if (dx !== 0 && dy === 0) {
+          const currentGY = Math.floor(player.y / TILE_SIZE);
+          const cellCenterY = currentGY * TILE_SIZE + 16;
+          const diffY = player.y - cellCenterY;
+
+          // If close to center, gently slide toward center line of row
+          if (Math.abs(diffY) > 1 && Math.abs(diffY) < 10) {
+            player.y -= Math.sign(diffY) * 1.0;
+          }
+        } else if (dy !== 0 && dx === 0) {
+          const currentGX = Math.floor(player.x / TILE_SIZE);
+          const cellCenterX = currentGX * TILE_SIZE + 16;
+          const diffX = player.x - cellCenterX;
+
+          if (Math.abs(diffX) > 1 && Math.abs(diffX) < 10) {
+            player.x -= Math.sign(diffX) * 1.0;
+          }
+        }
+
+        // Check if movement is allowed
+        if (canPlayerMoveTo(targetX, targetY)) {
+          player.x = targetX;
+          player.y = targetY;
+        } else {
+          // Try horizontal / vertical single-axis sliding
+          if (dx !== 0 && canPlayerMoveTo(targetX, player.y)) {
+            player.x = targetX;
+          } else if (dy !== 0 && canPlayerMoveTo(player.x, targetY)) {
+            player.y = targetY;
+          }
+        }
+      }
+
+      // Check pickup of powerups
+      const pgx = Math.floor(player.x / TILE_SIZE);
+      const pgy = Math.floor(player.y / TILE_SIZE);
+
+      powerups.forEach((pwr, idx) => {
+        if (pwr.revealed && pwr.gx === pgx && pwr.gy === pgy) {
+          if (pwr.type === PWR_DOOR) {
+            // Exit door
+            if (enemies.length === 0) {
+              triggerStageClear();
+            }
+          } else {
+            // Stat powerups
+            sound.powerup();
+            createFloatScore(player.x, player.y, '+1000');
+            score += 1000;
+
+            if (pwr.type === PWR_BOMB) {
+              player.bombsMax++;
+            } else if (pwr.type === PWR_FIRE) {
+              player.bombRange++;
+            } else if (pwr.type === PWR_SPEED) {
+              player.hasSpeedUp = true;
+              player.speed = player.baseSpeed * 1.35;
+            }
+            powerups.splice(idx, 1);
+            updateHUD();
+          }
+        }
+      });
+    }
+
+    function canPlayerMoveTo(x, y) {
+      const radius = player.radius;
+      const minGX = Math.floor((x - radius) / TILE_SIZE);
+      const maxGX = Math.floor((x + radius) / TILE_SIZE);
+      const minGY = Math.floor((y - radius) / TILE_SIZE);
+      const maxGY = Math.floor((y + radius) / TILE_SIZE);
+
+      for (let r = minGY; r <= maxGY; r++) {
+        for (let c = minGX; c <= maxGX; c++) {
+          if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+          if (map[r][c] === TILE_WALL || map[r][c] === TILE_BRICK) return false;
+
+          // Bomb collision: if player is already inside the bomb's tile when planted,
+          // they can walk out. Once out, it becomes solid.
+          for (let b of bombs) {
+            if (b.gx === c && b.gy === r) {
+              const currentDist = Math.hypot(player.x - (b.gx * TILE_SIZE + 16), player.y - (b.gy * TILE_SIZE + 16));
+              if (currentDist > TILE_SIZE * 0.7) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+      return true;
+    }
+
+    function killPlayer() {
+      if (player.isDying) return;
+      player.isDying = true;
+      player.dieTimer = 0;
+      sound.playerDie();
+    }
+
+    function handlePlayerDeath() {
+      lives--;
+      updateHUD();
+      if (lives <= 0) {
+        showGameOver();
+      } else {
+        // Respawn in current stage
+        player.x = 1 * TILE_SIZE + 16;
+        player.y = 1 * TILE_SIZE + 16;
+        player.isDying = false;
+        player.dieTimer = 0;
+        player.invulnerableTimer = 90;
+        player.direction = 'down';
+      }
+    }
+
+    /* ==========================================================================
+       7. BOMBS & EXPLOSION FIRE RAYS
+       ========================================================================== */
+    function plantBomb() {
+      if (player.isDying || gameState !== STATE_PLAYING) return;
+
+      const activeBombs = bombs.filter(b => b.owner === 'player').length;
+      if (activeBombs >= player.bombsMax) return;
+
+      const gx = Math.floor(player.x / TILE_SIZE);
+      const gy = Math.floor(player.y / TILE_SIZE);
+
+      // Don't stack bombs on same tile
+      if (bombs.some(b => b.gx === gx && b.gy === gy)) return;
+
+      bombs.push({
+        gx: gx,
+        gy: gy,
+        x: gx * TILE_SIZE + 16,
+        y: gy * TILE_SIZE + 16,
+        timer: 160, // ~2.6 seconds
+        maxTimer: 160,
+        range: player.bombRange,
+        owner: 'player'
+      });
+
+      sound.bombPlant();
+      updateHUD();
+    }
+
+    function updateBombs() {
+      for (let i = bombs.length - 1; i >= 0; i--) {
+        const b = bombs[i];
+        b.timer--;
+        if (b.timer <= 0) {
+          detonateBomb(b);
+          bombs.splice(i, 1);
+          updateHUD();
+        }
+      }
+    }
+
+    function detonateBomb(bomb) {
+      sound.explosion();
+
+      const explosionCells = [{ gx: bomb.gx, gy: bomb.gy, dir: 'center', isEnd: false }];
+      const directions = [
+        { dx: 0, dy: -1, dir: 'up' },
+        { dx: 0, dy: 1, dir: 'down' },
+        { dx: -1, dy: 0, dir: 'left' },
+        { dx: 1, dy: 0, dir: 'right' }
+      ];
+
+      directions.forEach(d => {
+        for (let step = 1; step <= bomb.range; step++) {
+          const cx = bomb.gx + d.dx * step;
+          const cy = bomb.gy + d.dy * step;
+
+          if (cx < 0 || cx >= COLS || cy < 0 || cy >= ROWS) break;
+
+          // Solid wall stops blast completely
+          if (map[cy][cx] === TILE_WALL) {
+            break;
+          }
+
+          // Destructible brick stops blast and is destroyed
+          if (map[cy][cx] === TILE_BRICK) {
+            destroyBrick(cx, cy);
+            explosionCells.push({ gx: cx, gy: cy, dir: d.dir, isEnd: true });
+            break;
+          }
+
+          const isEnd = (step === bomb.range);
+          explosionCells.push({ gx: cx, gy: cy, dir: d.dir, isEnd: isEnd });
+
+          // Chain reaction: ignite any bomb in blast path
+          bombs.forEach(otherBomb => {
+            if (otherBomb.gx === cx && otherBomb.gy === cy && otherBomb.timer > 3) {
+              otherBomb.timer = 2; // trigger immediate detonation
+            }
+          });
+        }
+      });
+
+      explosions.push({
+        cells: explosionCells,
+        timer: 24,
+        maxTimer: 24
+      });
+    }
+
+    function destroyBrick(gx, gy) {
+      map[gy][gx] = TILE_EMPTY;
+      score += 50;
+      updateHUD();
+
+      // Spawn brick rubble particles
+      for (let i = 0; i < 8; i++) {
+        particles.push({
+          x: gx * TILE_SIZE + 16,
+          y: gy * TILE_SIZE + 16,
+          vx: (Math.random() - 0.5) * 4,
+          vy: (Math.random() - 0.5) * 4,
+          color: Math.random() > 0.5 ? '#9b2b1b' : '#c4422b',
+          size: Math.random() * 5 + 3,
+          life: 20,
+          maxLife: 20
+        });
+      }
+
+      // Reveal powerup if hidden here
+      const pwr = powerups.find(p => p.gx === gx && p.gy === gy);
+      if (pwr) {
+        pwr.revealed = true;
+      }
+    }
+
+    function updateExplosions() {
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        const exp = explosions[i];
+        exp.timer--;
+
+        // Check if blast touches enemies or player
+        exp.cells.forEach(cell => {
+          const cellX = cell.gx * TILE_SIZE + 16;
+          const cellY = cell.gy * TILE_SIZE + 16;
+
+          // Hit enemies
+          enemies.forEach(e => {
+            if (!e.isDying) {
+              const d = Math.hypot(e.x - cellX, e.y - cellY);
+              if (d < 18) {
+                e.isDying = true;
+                e.dieTimer = 0;
+                score += 200;
+                sound.enemyHit();
+                createFloatScore(e.x, e.y, '+200');
+                updateHUD();
+              }
+            }
+          });
+
+          // Hit player
+          if (!player.isDying && player.invulnerableTimer <= 0) {
+            const dp = Math.hypot(player.x - cellX, player.y - cellY);
+            if (dp < 16) {
+              killPlayer();
+            }
+          }
+        });
+
+        if (exp.timer <= 0) {
+          explosions.splice(i, 1);
+        }
+      }
+    }
+
+    /* Floating score animation effect */
+    let floatScores = [];
+    function createFloatScore(x, y, text) {
+      floatScores.push({ x, y, text, life: 30 });
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      for (let i = floatScores.length - 1; i >= 0; i--) {
+        const fs = floatScores[i];
+        fs.y -= 0.6;
+        fs.life--;
+        if (fs.life <= 0) floatScores.splice(i, 1);
+      }
+    }
+
+    /* ==========================================================================
+       8. RENDERING (Direct Pixel Art Matching the Screenshot)
+       ========================================================================== */
+    function draw() {
+      // 1. Draw Field / Grass Background
+      ctx.fillStyle = '#4fa32a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle grass texture pattern
+      ctx.fillStyle = '#489824';
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if ((r + c) % 2 === 0) {
+            ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, 3, 3);
+            ctx.fillRect(c * TILE_SIZE + 18, r * TILE_SIZE + 14, 2, 2);
+          }
+        }
+      }
+
+      // 2. Draw Exit Door if revealed
+      if (exitDoor) {
+        const doorPwr = powerups.find(p => p.type === PWR_DOOR && p.revealed);
+        if (doorPwr) {
+          drawExitDoor(doorPwr.gx * TILE_SIZE, doorPwr.gy * TILE_SIZE, exitDoor.open);
+        }
+      }
+
+      // 3. Draw Power-ups (Fire, Bomb, Speed)
+      powerups.forEach(p => {
+        if (p.revealed && p.type !== PWR_DOOR) {
+          drawPowerup(p.gx * TILE_SIZE, p.gy * TILE_SIZE, p.type);
+        }
+      });
+
+      // 4. Draw Map Blocks (Pillars & Destructible Bricks)
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          const tile = map[r][c];
+          const px = c * TILE_SIZE;
+          const py = r * TILE_SIZE;
+
+          if (tile === TILE_WALL) {
+            drawPillar(px, py);
+          } else if (tile === TILE_BRICK) {
+            drawBrick(px, py);
+          }
+        }
+      }
+
+      // 5. Draw Bombs
+      bombs.forEach(b => drawBomb(b));
+
+      // 6. Draw Explosions (Flame Ray matching the image!)
+      explosions.forEach(exp => drawExplosion(exp));
+
+      // 7. Draw Enemies (Ballom)
+      enemies.forEach(e => drawBallom(e));
+
+      // 8. Draw Player
+      drawPlayer();
+
+      // 9. Draw Rubble Particles & Floating Scores
+      particles.forEach(p => {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+      });
+
+      floatScores.forEach(fs => {
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px "Press Start 2P"';
+        ctx.fillText(fs.text, fs.x - 12, fs.y);
+      });
+    }
+
+    // Helper: Draw Indestructible Solid Pillar
+    function drawPillar(x, y) {
+      // Main block base
+      ctx.fillStyle = '#8f8880';
+      ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+      // Top & Left highlight bevel
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x, y, TILE_SIZE, 3);
+      ctx.fillRect(x, y, 3, TILE_SIZE);
+
+      // Bottom & Right dark shadow
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(x, y + TILE_SIZE - 4, TILE_SIZE, 4);
+      ctx.fillRect(x + TILE_SIZE - 4, y, 4, TILE_SIZE);
+
+      // Inner bevel bevel shadow
+      ctx.fillStyle = '#57514a';
+      ctx.fillRect(x + 3, y + TILE_SIZE - 6, TILE_SIZE - 6, 2);
+      ctx.fillRect(x + TILE_SIZE - 6, y + 3, 2, TILE_SIZE - 6);
+    }
+
+    // Helper: Draw Destructible Red Brick Block
+    function drawBrick(x, y) {
+      // Brick base dark red
+      ctx.fillStyle = '#9b2b1b';
+      ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+
+      // Mortar/Groove lines
+      ctx.fillStyle = '#000000';
+      // Outer outline
+      ctx.strokeRect(x + 0.5, y + 0.5, TILE_SIZE - 1, TILE_SIZE - 1);
+      // Horizontal divide
+      ctx.fillRect(x, y + 10, TILE_SIZE, 2);
+      ctx.fillRect(x, y + 21, TILE_SIZE, 2);
+
+      // Vertical seams
+      ctx.fillRect(x + 16, y, 2, 10);
+      ctx.fillRect(x + 8, y + 11, 2, 10);
+      ctx.fillRect(x + 24, y + 11, 2, 10);
+      ctx.fillRect(x + 16, y + 22, 2, 10);
+
+      // Brick surface highlight accents
+      ctx.fillStyle = '#cf4834';
+      ctx.fillRect(x + 2, y + 2, 12, 2);
+      ctx.fillRect(x + 18, y + 2, 12, 2);
+      ctx.fillRect(x + 10, y + 13, 12, 2);
+      ctx.fillRect(x + 2, y + 24, 12, 2);
+    }
+
+    // Helper: Draw Power-up
+    function drawPowerup(x, y, type) {
+      ctx.fillStyle = '#222';
+      ctx.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+
+      if (type === PWR_BOMB) {
+        ctx.fillStyle = '#ffd700';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('💣', x + 8, y + 22);
+      } else if (type === PWR_FIRE) {
+        ctx.fillStyle = '#ff4500';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('🔥', x + 8, y + 22);
+      } else if (type === PWR_SPEED) {
+        ctx.fillStyle = '#00ffff';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('⚡', x + 8, y + 22);
+      }
+    }
+
+    // Helper: Draw Exit Door
+    function drawExitDoor(x, y, isOpen) {
+      ctx.fillStyle = isOpen ? '#000000' : '#452b14';
+      ctx.fillRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+
+      // Door frame
+      ctx.strokeStyle = isOpen ? '#22c55e' : '#a16207';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+
+      if (isOpen) {
+        // Glowing portal effect
+        ctx.fillStyle = '#4ade80';
+        ctx.fillRect(x + 10, y + 10, TILE_SIZE - 20, TILE_SIZE - 20);
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px "Press Start 2P"';
+        ctx.fillText('EXIT', x + 5, y + 20);
+      } else {
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(x + 14, y + 14, 4, 4); // Keyhole/knob
+      }
+    }
+
+    // Helper: Draw Classic Round Black Bomb with Sparks
+    function drawBomb(bomb) {
+      const px = bomb.gx * TILE_SIZE + 16;
+      const py = bomb.gy * TILE_SIZE + 16;
+
+      // Pulsing scale as fuse ticks down
+      const pulse = 1 + Math.sin(bomb.timer * 0.25) * 0.08;
+      const radius = 11 * pulse;
+
+      // Drop shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(px, py + 10, 10, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Black bomb sphere
+      ctx.fillStyle = '#0a0a0a';
+      ctx.beginPath();
+      ctx.arc(px, py, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Crisp White Specular Crescent / Highlight (matching classic screenshot!)
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px + 4, py - 4, radius * 0.38, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bomb Fuse Collar
+      ctx.fillStyle = '#71717a';
+      ctx.fillRect(px - 3, py - radius - 3, 6, 4);
+
+      // Spark Animation
+      const sparkColor = (bomb.timer % 6 < 3) ? '#facc15' : '#ef4444';
+      ctx.fillStyle = sparkColor;
+      ctx.fillRect(px - 2 + (Math.random() * 4 - 2), py - radius - 6, 4, 4);
+    }
+
+    // Helper: Draw Fiery Jagged Explosion Blast (Matching Image)
+    function drawExplosion(exp) {
+      exp.cells.forEach(cell => {
+        const cx = cell.gx * TILE_SIZE;
+        const cy = cell.gy * TILE_SIZE;
+        const midX = cx + 16;
+        const midY = cy + 16;
+
+        // Outer fiery crimson jagged border
+        ctx.fillStyle = '#d92c0b';
+        ctx.fillRect(cx + 1, cy + 1, TILE_SIZE - 2, TILE_SIZE - 2);
+
+        // Core jagged flames
+        ctx.fillStyle = '#ea580c';
+        ctx.fillRect(cx + 4, cy + 4, TILE_SIZE - 8, TILE_SIZE - 8);
+
+        // Inner peach/salmon bright plasma (exact match to user's photo!)
+        ctx.fillStyle = '#f6b8ac';
+        ctx.fillRect(cx + 8, cy + 8, TILE_SIZE - 16, TILE_SIZE - 16);
+
+        // Flame sparks / jagged edge teeth
+        ctx.fillStyle = '#e11d48';
+        for (let i = 0; i < 4; i++) {
+          const rx = cx + (i * 8) + (Math.random() * 2);
+          const ry = cy + (Math.random() * 4);
+          ctx.fillRect(rx, ry, 3, 3);
+          ctx.fillRect(rx, cy + TILE_SIZE - 4, 3, 3);
+        }
+      });
+    }
+
+    // Helper: Draw Ballom Enemy (Classic Blue Balloon with Eyes & Mouth)
+    function drawBallom(enemy) {
+      const px = enemy.x;
+      const py = enemy.y + Math.sin(enemy.animTick) * 2; // subtle floating bob
+
+      if (enemy.isDying) {
+        // Popping death animation
+        ctx.fillStyle = '#60a5fa';
+        ctx.beginPath();
+        ctx.arc(px, py, 14 * (1 - enemy.dieTimer / 25), 0, Math.PI * 2);
+        ctx.fill();
+        return;
+      }
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(px, py + 12, 8, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Balloon Outline
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(px, py - 1, 13, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main Balloon Body (Classic Bright Blue)
+      ctx.fillStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.arc(px, py - 1, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bottom Knot
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillRect(px - 2, py + 10, 4, 3);
+
+      // Balloon Eyes (White Rectangles with pupils)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(px - 6, py - 6, 4, 7);
+      ctx.fillRect(px + 2, py - 6, 4, 7);
+
+      // Eye Pupils
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(px - 5, py - 4, 2, 4);
+      ctx.fillRect(px + 3, py - 4, 2, 4);
+
+      // Cheerful / Open Mouth (Matching the image!)
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(px, py + 3, 3, 0, Math.PI);
+      ctx.fill();
+    }
+
+    // Helper: Draw Bomberman Character
+    function drawPlayer() {
+      if (player.invulnerableTimer > 0 && Math.floor(player.invulnerableTimer / 4) % 2 === 0) {
+        // Flash when invulnerable
+        return;
+      }
+
+      const px = player.x;
+      const py = player.y;
+
+      if (player.isDying) {
+        // Spin and shrink sad death
+        const progress = player.dieTimer / 60;
+        ctx.save();
+        ctx.translate(px, py);
+        ctx.rotate(progress * Math.PI * 4);
+        ctx.scale(1 - progress, 1 - progress);
+        drawPlayerSprite(0, 0);
+        ctx.restore();
+        return;
+      }
+
+      drawPlayerSprite(px, py);
+    }
+
+    function drawPlayerSprite(x, y) {
+      const walkOffset = player.isMoving ? Math.sin(player.animTick) * 2 : 0;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(x, y + 10, 9, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Feet / Shoes (Brown/Tan boots matching user's retro sprite)
+      ctx.fillStyle = '#eab308';
+      ctx.fillRect(x - 8, y + 8 + walkOffset, 5, 4);
+      ctx.fillRect(x + 3, y + 8 - walkOffset, 5, 4);
+
+      // Body / Suit (Dark crimson / brown tunic)
+      ctx.fillStyle = '#7f1d1d';
+      ctx.fillRect(x - 6, y - 2, 12, 11);
+
+      // Belt
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(x - 6, y + 5, 12, 2);
+
+      // Head / Helmet (White with pink antenna)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x - 8, y - 16, 16, 14);
+
+      // Helmet outline
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x - 8, y - 16, 16, 14);
+
+      // Antenna
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(x - 2, y - 20, 4, 4);
+
+      // Face Visor / Eyes depending on direction
+      ctx.fillStyle = '#fed7aa'; // Peach skin visor
+      ctx.fillRect(x - 6, y - 13, 12, 9);
+
+      ctx.fillStyle = '#1e1b4b'; // Eyes
+      if (player.direction === 'down') {
+        ctx.fillRect(x - 4, y - 11, 2, 5);
+        ctx.fillRect(x + 2, y - 11, 2, 5);
+      } else if (player.direction === 'up') {
+        // Back of head (all white)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(x - 6, y - 13, 12, 9);
+      } else if (player.direction === 'left') {
+        ctx.fillRect(x - 5, y - 11, 2, 5);
+      } else if (player.direction === 'right') {
+        ctx.fillRect(x + 3, y - 11, 2, 5);
+      }
+    }
+
+    /* ==========================================================================
+       9. GAME LOOP & LEVEL MANAGEMENT
+       ========================================================================== */
+    let lastFrameTime = performance.now();
+
+    function gameLoop(now) {
+      const dt = (now - lastFrameTime) / 1000;
+      lastFrameTime = now;
+
+      if (gameState === STATE_PLAYING) {
+        // Timer countdown
+        if (now - lastTimeTick >= 1000) {
+          stageTimer--;
+          lastTimeTick = now;
+          updateHUD();
+
+          if (stageTimer <= 0) {
+            killPlayer();
+          }
+        }
+
+        updatePlayer();
+        updateEnemies();
+        updateBombs();
+        updateExplosions();
+        updateParticles();
+      }
+
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function triggerStageClear() {
+      gameState = STATE_STAGE_CLEAR;
+      sound.stageClear();
+      score += stageTimer * 10;
+      updateHUD();
+
+      overlayTitle.innerText = `STAGE ${stage} CLEAR!`;
+      overlayTitle.className = 'text-xl sm:text-3xl text-green-400 mb-3 tracking-widest leading-relaxed drop-shadow-[0_4px_0_#14532d]';
+      overlayDesc.innerText = `¡Excelente! Enemigos eliminados y salida alcanzada.\nBonus de tiempo: +${stageTimer * 10} pts`;
+      btnStart.innerText = 'SIGUIENTE NIVEL';
+      overlayScreen.classList.remove('hidden');
+    }
+
+    function showGameOver() {
+      gameState = STATE_GAME_OVER;
+      overlayTitle.innerText = 'GAME OVER';
+      overlayTitle.className = 'text-xl sm:text-3xl text-red-500 mb-3 tracking-widest leading-relaxed drop-shadow-[0_4px_0_#7f1d1d]';
+      overlayDesc.innerText = `Puntuación final: ${score}\n¿Quieres intentar de nuevo?`;
+      btnStart.innerText = 'REINTENTAR';
+      overlayScreen.classList.remove('hidden');
+    }
+
+    function startNewGame() {
+      sound.init();
+      score = 0;
+      stage = 1;
+      lives = 3;
+      player.bombsMax = 1;
+      player.bombRange = 1;
+      player.speed = player.baseSpeed;
+      player.hasSpeedUp = false;
+
+      initMap();
+      gameState = STATE_PLAYING;
+      overlayScreen.classList.add('hidden');
+    }
+
+    function nextStage() {
+      stage++;
+      initMap();
+      gameState = STATE_PLAYING;
+      overlayScreen.classList.add('hidden');
+    }
+
+    function updateHUD() {
+      hudScore.innerText = String(score).padStart(5, '0');
+      hudTime.innerText = String(stageTimer);
+      hudLives.innerText = String(lives);
+      hudStage.innerText = String(stage);
+
+      const activeBombs = bombs.filter(b => b.owner === 'player').length;
+      hudBombs.innerText = `${player.bombsMax - activeBombs}/${player.bombsMax}`;
+      hudRange.innerText = String(player.bombRange);
+      hudSpeed.innerText = player.hasSpeedUp ? 'FAST' : 'NORM';
+    }
+
+    /* ==========================================================================
+       10. INPUT LISTENERS (Keyboard & Mobile Touch)
+       ========================================================================== */
+    // Keyboard Controls
+    window.addEventListener('keydown', (e) => {
+      sound.init();
+      if (['ArrowUp', 'KeyW'].includes(e.code)) { keys.up = true; e.preventDefault(); }
+      if (['ArrowDown', 'KeyS'].includes(e.code)) { keys.down = true; e.preventDefault(); }
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) { keys.left = true; e.preventDefault(); }
+      if (['ArrowRight', 'KeyD'].includes(e.code)) { keys.right = true; e.preventDefault(); }
+      if (['Space', 'Enter', 'KeyX'].includes(e.code)) {
+        plantBomb();
+        e.preventDefault();
+      }
+      if (e.code === 'KeyP') {
+        togglePause();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (['ArrowUp', 'KeyW'].includes(e.code)) keys.up = false;
+      if (['ArrowDown', 'KeyS'].includes(e.code)) keys.down = false;
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) keys.left = false;
+      if (['ArrowRight', 'KeyD'].includes(e.code)) keys.right = false;
+    });
+
+    // Touch Virtual D-PAD
+    function bindTouchButton(elId, keyName) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+
+      const press = (ev) => {
+        ev.preventDefault();
+        sound.init();
+        keys[keyName] = true;
+      };
+
+      const release = (ev) => {
+        ev.preventDefault();
+        keys[keyName] = false;
+      };
+
+      el.addEventListener('touchstart', press, { passive: false });
+      el.addEventListener('touchend', release, { passive: false });
+      el.addEventListener('touchcancel', release, { passive: false });
+      el.addEventListener('mousedown', press);
+      el.addEventListener('mouseup', release);
+      el.addEventListener('mouseleave', release);
+    }
+
+    bindTouchButton('ctrl-up', 'up');
+    bindTouchButton('ctrl-down', 'down');
+    bindTouchButton('ctrl-left', 'left');
+    bindTouchButton('ctrl-right', 'right');
+
+    // Bomb Button (Touch / Click)
+    const ctrlBomb = document.getElementById('ctrl-bomb');
+    const onBombPress = (ev) => {
+      ev.preventDefault();
+      sound.init();
+      plantBomb();
+    };
+    ctrlBomb.addEventListener('touchstart', onBombPress, { passive: false });
+    ctrlBomb.addEventListener('mousedown', onBombPress);
+
+    // Overlay Button Click (Start / Next / Restart)
+    btnStart.addEventListener('click', () => {
+      sound.init();
+      if (gameState === STATE_MENU || gameState === STATE_GAME_OVER) {
+        startNewGame();
+      } else if (gameState === STATE_STAGE_CLEAR) {
+        nextStage();
+      }
+    });
+
+    // Audio SFX Toggle
+    btnSound.addEventListener('click', () => {
+      sound.init();
+      sound.enabled = !sound.enabled;
+      btnSound.innerText = sound.enabled ? '🔊 SFX: ON' : '🔈 SFX: OFF';
+    });
+
+    // Pause Toggle
+    function togglePause() {
+      if (gameState === STATE_PLAYING) {
+        gameState = STATE_PAUSED;
+        btnPause.innerText = '▶ RESUME';
+        overlayTitle.innerText = 'PAUSED';
+        overlayTitle.className = 'text-xl sm:text-3xl text-cyan-400 mb-3 tracking-widest leading-relaxed drop-shadow-[0_4px_0_#0e7490]';
+        overlayDesc.innerText = 'Juego en pausa';
+        btnStart.innerText = 'CONTINUAR';
+        overlayScreen.classList.remove('hidden');
+      } else if (gameState === STATE_PAUSED) {
+        gameState = STATE_PLAYING;
+        btnPause.innerText = '⏸ PAUSE';
+        overlayScreen.classList.add('hidden');
+      }
+    }
+    btnPause.addEventListener('click', togglePause);
+
+    // Prevent default scrolling on touch navigation
+    document.body.addEventListener('touchmove', (e) => {
+      if (e.target.closest('#ctrl-up, #ctrl-down, #ctrl-left, #ctrl-right, #ctrl-bomb')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    /* ==========================================================================
+       11. INITIALIZATION ON WINDOW LOAD
+       ========================================================================== */
+    window.onload = function () {
+      initMap();
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
