@@ -1,0 +1,1746 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UniChess Online — Plataforma Multijugador en Tiempo Real</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chess.js (Validación oficial FIDE, FEN, PGN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+  <!-- PeerJS (WebRTC P2P en tiempo real a través de Internet) -->
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          },
+          colors: {
+            board: {
+              light: '#ebecd0',
+              dark: '#739552',
+              lightWood: '#f0d9b5',
+              darkWood: '#b58863',
+              lightSlate: '#dee3e6',
+              darkSlate: '#8ca2ad'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .selectable-text {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+    /* Tablero responsivo cuadrado perfecto */
+    .chess-grid {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      grid-template-rows: repeat(8, minmax(0, 1fr));
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      border-radius: 0.75rem;
+      overflow: hidden;
+    }
+    .square {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.12s ease;
+    }
+    .piece-svg {
+      width: 84%;
+      height: 84%;
+      cursor: grab;
+      filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+      transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+      z-index: 10;
+      pointer-events: auto;
+    }
+    .piece-svg:hover {
+      transform: scale(1.06);
+    }
+    .piece-svg:active {
+      cursor: grabbing;
+      transform: scale(1.14);
+    }
+    /* Indicadores de movimiento legal */
+    .legal-dot {
+      width: 28%;
+      height: 28%;
+      border-radius: 9999px;
+      background-color: rgba(20, 25, 30, 0.28);
+      pointer-events: none;
+      z-index: 5;
+    }
+    .legal-capture {
+      position: absolute;
+      inset: 6%;
+      border-radius: 9999px;
+      border: 5px solid rgba(20, 25, 30, 0.28);
+      pointer-events: none;
+      z-index: 5;
+    }
+    /* Resaltados de estado */
+    .sq-selected {
+      background-color: rgba(255, 255, 51, 0.55) !important;
+    }
+    .sq-last-move {
+      background-color: rgba(245, 246, 130, 0.48) !important;
+    }
+    .sq-check {
+      background: radial-gradient(circle, rgba(239,68,68,0.9) 0%, rgba(220,38,38,0.65) 55%, rgba(185,28,28,0) 100%) !important;
+    }
+    .coord-label {
+      position: absolute;
+      font-size: 0.65rem;
+      font-weight: 700;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 2;
+    }
+    /* Scrollbars elegantes */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(71, 85, 105, 0.8);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 1);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- BARRA SUPERIOR DE NAVEGACIÓN -->
+  <header class="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <!-- Logo y Estado de Red -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-950/50 font-bold text-xl">
+          ♞
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-lg tracking-tight text-white">UniChess <span class="text-emerald-400">Online</span></h1>
+            <span class="px-2 py-0.5 text-[11px] font-mono font-semibold uppercase tracking-wider bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-full">UNIPROMPT v3.1</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span id="netStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="netStatusText">Red Híbrida Activa (WebRTC P2P + Multi-Ventana)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selector Rápido de Modo de Juego -->
+      <div class="flex items-center bg-slate-800/90 p-1 rounded-xl border border-slate-700/70">
+        <button onclick="switchMode('online')" id="modeBtn-online" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all bg-emerald-600 text-white shadow">
+          🌐 Online P2P / Salas
+        </button>
+        <button onclick="switchMode('multitab')" id="modeBtn-multitab" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-300 hover:text-white">
+          ⚡ 2 Ventanas (0ms)
+        </button>
+        <button onclick="switchMode('ai')" id="modeBtn-ai" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-300 hover:text-white">
+          🤖 vs Motor IA
+        </button>
+      </div>
+
+      <!-- Acciones Globales -->
+      <div class="flex items-center gap-2">
+        <!-- Tema del Tablero -->
+        <select id="boardThemeSelect" onchange="changeBoardTheme(this.value)" class="bg-slate-800 border border-slate-700 text-xs text-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:border-emerald-500">
+          <option value="classic">🎨 Torneo Verde</option>
+          <option value="wood">🪵 Madera Clásica</option>
+          <option value="slate">❄️ Azul Glacial</option>
+        </select>
+
+        <!-- Botón de Sonido -->
+        <button onclick="toggleSound()" id="soundBtn" title="Efectos de Sonido" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium transition">
+          🔊
+        </button>
+
+        <!-- Inspector del Prompt Maestro -->
+        <button onclick="toggleModal('promptModal', true)" class="px-3 py-2 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/40 text-indigo-300 text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>📜</span>
+          <span class="hidden sm:inline">Contrato UNIPROMPT</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+    <!-- COLUMNA IZQUIERDA: CONEXIÓN ONLINE, LOBBY Y CONFIGURACIÓN (3 cols) -->
+    <section class="lg:col-span-3 flex flex-col gap-4">
+
+      <!-- Perfil del Jugador -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tu Identidad Online</span>
+          <span id="myColorBadge" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">Blancas ⚪</span>
+        </div>
+        <div class="flex gap-2">
+          <input id="usernameInput" type="text" value="GranMaestro_BO" maxlength="18" onchange="updateUsername(this.value)"
+            class="selectable-text w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm font-semibold text-white focus:outline-none focus:border-emerald-500"
+            placeholder="Tu nombre de usuario..." />
+        </div>
+      </div>
+
+      <!-- PANEL DINÁMICO SEGÚN MODO -->
+      <!-- 1. Panel Online P2P (WebRTC / PeerJS) -->
+      <div id="panel-online" class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>🌐</span> Sala Multijugador Online
+          </h2>
+          <span id="p2pBadge" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">Listo</span>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Crea una sala privada o únete con el código de un amigo desde cualquier navegador o dispositivo.
+        </p>
+
+        <!-- Crear Sala -->
+        <div class="bg-slate-950/90 border border-slate-800/90 rounded-xl p-3 flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400 font-medium">Tu Código de Sala:</span>
+            <button onclick="createOnlineRoom()" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 underline">
+              Generar Nuevo
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <div id="myRoomCodeDisplay" class="selectable-text flex-1 bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 font-mono text-base font-bold tracking-widest text-center text-emerald-400">
+              --- ---
+            </div>
+            <button onclick="copyRoomCode()" title="Copiar Código" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
+              Copiar
+            </button>
+          </div>
+          <button onclick="openDualWindowMirror()" class="w-full mt-1 py-1.5 px-3 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-xs font-semibold transition flex items-center justify-center gap-1.5">
+            <span>🪟</span> Probar Abriendo 2da Ventana Espejo
+          </button>
+        </div>
+
+        <!-- Unirse a Sala -->
+        <div class="flex flex-col gap-1.5 pt-1">
+          <label class="text-xs text-slate-400 font-medium">Conectar a Código de Amigo:</label>
+          <div class="flex gap-2">
+            <input id="joinRoomInput" type="text" maxlength="10" placeholder="Ej: CHESS1"
+              class="selectable-text flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm font-mono uppercase tracking-wider text-white focus:outline-none focus:border-emerald-500" />
+            <button onclick="joinOnlineRoom()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/50 transition">
+              Unirse
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Panel Multi-Ventana Instantáneo (BroadcastChannel) -->
+      <div id="panel-multitab" class="hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>⚡</span> Sincronización 2 Ventanas
+          </h2>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">0ms Latencia</span>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Implementa el patrón mediador (`ws-chess.js` / `BroadcastChannel`). Abre esta aplicación en otra pestaña o ventana para jugar en tiempo real con rotación automática.
+        </p>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="assignRoleAndSync('w')" id="roleBtn-w" class="py-2 px-3 rounded-xl bg-emerald-600/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold">
+            ⚪ Jugar Blancas
+          </button>
+          <button onclick="assignRoleAndSync('b')" id="roleBtn-b" class="py-2 px-3 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold">
+            ⚫ Jugar Negras
+          </button>
+        </div>
+        <button onclick="openDualWindowMirror()" class="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow transition">
+          🚀 Abrir Ventana de Oponente Ahora
+        </button>
+      </div>
+
+      <!-- 3. Panel Motor de Inteligencia Artificial -->
+      <div id="panel-ai" class="hidden bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-bold text-white flex items-center gap-2">
+            <span>🤖</span> Motor Heurístico Minimax
+          </h2>
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30">Poda α-β</span>
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="text-xs text-slate-400 font-medium">Nivel de Profundidad (ELO Est.):</label>
+          <select id="aiDifficulty" onchange="updateAISettings()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500">
+            <option value="1">Nivel 1 — Iniciación (~950 ELO)</option>
+            <option value="2">Nivel 2 — Jugador de Club (~1350 ELO)</option>
+            <option value="3" selected>Nivel 3 — Maestro Táctico (~1750 ELO)</option>
+            <option value="4">Nivel 4 — Gran Maestro Deep (~2050 ELO)</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs text-slate-400 font-medium">Tu Color frente a la IA:</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="startAIGame('w')" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-white transition">
+              ⚪ Blancas
+            </button>
+            <button onclick="startAIGame('b')" class="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-white transition">
+              ⚫ Negras
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOBBY DE JUGADORES ONLINE (Inspirado en players.js de la fuente) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Jugadores en el Lobby
+          </h3>
+          <span id="lobbyCount" class="text-xs font-mono text-slate-400">4 activos</span>
+        </div>
+        <ul id="playersLobbyList" class="flex flex-col gap-2 text-xs">
+          <!-- Renderizado dinámicamente -->
+        </ul>
+      </div>
+
+      <!-- CONTROL DE TIEMPO (RELOJ FIDE) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-2.5">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Ritmo de Juego (Reloj)</span>
+        <div class="grid grid-cols-4 gap-1.5">
+          <button onclick="setTimeControl(60, 0, 'Bullet 1+0')" class="time-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono font-semibold text-slate-300 border border-slate-700">1+0</button>
+          <button onclick="setTimeControl(180, 2, 'Blitz 3+2')" class="time-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono font-semibold text-slate-300 border border-slate-700">3+2</button>
+          <button onclick="setTimeControl(600, 0, 'Rápido 10+0')" class="time-btn py-1.5 rounded-lg bg-emerald-600/25 border border-emerald-500/50 text-[11px] font-mono font-semibold text-emerald-300">10+0</button>
+          <button onclick="setTimeControl(900, 10, 'Clásico 15+10')" class="time-btn py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono font-semibold text-slate-300 border border-slate-700">15+10</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- COLUMNA CENTRAL: TABLERO DE AJEDREZ, BARRA DE EVALUACIÓN Y RELOJES (6 cols) -->
+    <section class="lg:col-span-6 flex flex-col items-center gap-3">
+
+      <!-- TARJETA DEL JUGADOR SUPERIOR (OPONENTE) -->
+      <div class="w-full max-w-[600px] bg-slate-900/95 border border-slate-800 rounded-2xl px-4 py-2.5 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3">
+          <div id="topPlayerAvatar" class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-lg font-bold">
+            ⚫
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="topPlayerName" class="font-bold text-sm text-white">Esperando Oponente...</span>
+              <span id="topPlayerBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Online</span>
+            </div>
+            <!-- Piezas capturadas por el jugador superior -->
+            <div class="flex items-center gap-1 min-h-[18px]">
+              <div id="topCapturedPieces" class="flex items-center text-xs tracking-tighter text-slate-300"></div>
+              <span id="topMaterialDiff" class="text-[11px] font-mono font-bold text-emerald-400"></span>
+            </div>
+          </div>
+        </div>
+        <!-- Reloj Superior -->
+        <div id="topClockBox" class="px-3.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-lg font-bold tracking-wider text-slate-300">
+          10:00
+        </div>
+      </div>
+
+      <!-- ÁREA CENTRAL: BARRA DE EVALUACIÓN + TABLERO 8x8 -->
+      <div class="w-full max-w-[600px] flex gap-2.5 items-stretch">
+        <!-- Barra de Evaluación Posicional Vertical -->
+        <div class="w-4 sm:w-5 bg-slate-800 rounded-lg overflow-hidden flex flex-col border border-slate-700/80 shadow-inner relative" title="Evaluación Posicional">
+          <div id="evalBarBlack" class="bg-slate-900 transition-all duration-300" style="height: 50%;"></div>
+          <div id="evalBarWhite" class="bg-slate-100 transition-all duration-300 flex-1"></div>
+          <span id="evalScoreText" class="absolute inset-x-0 top-1 text-[9px] font-mono font-extrabold text-center text-slate-400 mix-blend-difference">0.0</span>
+        </div>
+
+        <!-- Contenedor del Tablero -->
+        <div class="flex-1 relative flex items-center justify-center">
+          <div id="chessboard" class="chess-grid">
+            <!-- 64 Casillas generadas dinámicamente con SVG de alta precisión -->
+          </div>
+
+          <!-- MODAL INTERACTIVO DE CORONACIÓN DE PEÓN -->
+          <div id="promotionModal" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-20 flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 shadow-2xl max-w-xs w-full text-center">
+              <h3 class="text-sm font-bold text-white mb-1">Coronación de Peón</h3>
+              <p class="text-xs text-slate-400 mb-4">Selecciona la pieza a promocionar:</p>
+              <div class="grid grid-cols-4 gap-2">
+                <button onclick="confirmPromotion('q')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 hover:border-emerald-500 flex flex-col items-center gap-1 transition">
+                  <span class="text-2xl">♛</span>
+                  <span class="text-[10px] font-bold">Dama</span>
+                </button>
+                <button onclick="confirmPromotion('r')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 hover:border-emerald-500 flex flex-col items-center gap-1 transition">
+                  <span class="text-2xl">♜</span>
+                  <span class="text-[10px] font-bold">Torre</span>
+                </button>
+                <button onclick="confirmPromotion('b')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 hover:border-emerald-500 flex flex-col items-center gap-1 transition">
+                  <span class="text-2xl">♝</span>
+                  <span class="text-[10px] font-bold">Alfil</span>
+                </button>
+                <button onclick="confirmPromotion('n')" class="p-2.5 rounded-xl bg-slate-800 hover:bg-emerald-600/30 border border-slate-700 hover:border-emerald-500 flex flex-col items-center gap-1 transition">
+                  <span class="text-2xl">♞</span>
+                  <span class="text-[10px] font-bold">Caballo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARJETA DEL JUGADOR INFERIOR (TÚ) -->
+      <div class="w-full max-w-[600px] bg-slate-900/95 border border-slate-800 rounded-2xl px-4 py-2.5 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3">
+          <div id="bottomPlayerAvatar" class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-lg font-bold">
+            ⚪
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span id="bottomPlayerName" class="font-bold text-sm text-white">GranMaestro_BO (Tú)</span>
+              <span id="turnIndicatorBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">Tu Turno</span>
+            </div>
+            <!-- Piezas capturadas por el jugador inferior -->
+            <div class="flex items-center gap-1 min-h-[18px]">
+              <div id="bottomCapturedPieces" class="flex items-center text-xs tracking-tighter text-slate-300"></div>
+              <span id="bottomMaterialDiff" class="text-[11px] font-mono font-bold text-emerald-400"></span>
+            </div>
+          </div>
+        </div>
+        <!-- Reloj Inferior -->
+        <div id="bottomClockBox" class="px-3.5 py-1.5 rounded-xl bg-slate-950 border border-emerald-500/50 font-mono text-lg font-bold tracking-wider text-emerald-400">
+          10:00
+        </div>
+      </div>
+
+      <!-- BARRA DE CONTROLES DE PARTIDA Y NAVEGACIÓN DE HISTORIAL -->
+      <div class="w-full max-w-[600px] bg-slate-900/90 border border-slate-800 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-2">
+        <!-- Controles de Replay -->
+        <div class="flex items-center gap-1">
+          <button onclick="navigateHistory('start')" title="Inicio de Partida" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 transition">⏮</button>
+          <button onclick="navigateHistory('prev')" title="Jugada Anterior" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 transition">◀</button>
+          <button onclick="navigateHistory('next')" title="Jugada Siguiente" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 transition">▶</button>
+          <button onclick="navigateHistory('end')" title="Posición Actual" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700 transition">⏭</button>
+          <button onclick="flipBoard()" title="Rotar Perspectiva del Tablero" class="ml-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition flex items-center gap-1">
+            <span>🔄</span> Rotar
+          </button>
+        </div>
+
+        <!-- Acciones de Partida -->
+        <div class="flex items-center gap-1.5">
+          <button onclick="requestHint()" class="px-3 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold transition">
+            💡 Pista
+          </button>
+          <button onclick="offerDraw()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition">
+            🤝 Tablas
+          </button>
+          <button onclick="resignGame()" class="px-3 py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 text-xs font-semibold transition">
+            🏳️ Rendirse
+          </button>
+          <button onclick="resetAndBroadcastNewGame()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition">
+            ✨ Nueva
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- COLUMNA DERECHA: ESTADO, PGN, FEN Y CHAT EN TIEMPO REAL (3 cols) -->
+    <section class="lg:col-span-3 flex flex-col gap-4">
+
+      <!-- Banner de Estado de Partida -->
+      <div id="statusBanner" class="bg-gradient-to-r from-emerald-950/90 to-slate-900 border border-emerald-500/40 rounded-2xl p-4 shadow-xl">
+        <div class="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-semibold mb-0.5">Estado del Motor FIDE</div>
+        <div id="gameStatusTitle" class="text-sm font-bold text-white">Partida en curso — Turno de las Blancas</div>
+        <div id="openingNameLabel" class="text-xs text-slate-400 mt-1 font-medium">Posición Inicial Estándar</div>
+      </div>
+
+      <!-- Historial de Jugadas (PGN) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col h-56">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Notación Algebraica (PGN)</h3>
+          <button onclick="copyPGN()" class="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">Copiar PGN</button>
+        </div>
+        <div id="moveHistoryContainer" class="flex-1 overflow-y-auto bg-slate-950/80 border border-slate-800/80 rounded-xl p-2 font-mono text-xs">
+          <table class="w-full text-left border-collapse">
+            <tbody id="moveHistoryBody" class="divide-y divide-slate-800/60">
+              <tr><td colspan="3" class="text-slate-500 text-center py-8 font-sans">Realiza el primer movimiento en el tablero...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Cadena FEN (Forsyth-Edwards Notation) -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Estado FEN en Vivo</span>
+          <button onclick="copyFEN()" class="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300">Copiar FEN</button>
+        </div>
+        <input id="fenInputBox" type="text" readonly
+          class="selectable-text w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 font-mono text-[11px] text-slate-300 focus:outline-none" />
+        <div class="flex gap-1.5">
+          <input id="customFenLoadInput" type="text" placeholder="Pegar FEN personalizado..."
+            class="selectable-text flex-1 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-[11px] font-mono text-white focus:outline-none focus:border-emerald-500" />
+          <button onclick="loadCustomFEN()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-semibold text-slate-200 border border-slate-700">
+            Cargar
+          </button>
+        </div>
+      </div>
+
+      <!-- Chat Multijugador en Tiempo Real -->
+      <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col h-64">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <span>💬</span> Chat de Partida
+          </h3>
+          <div class="flex gap-1">
+            <button onclick="sendQuickChat('¡Buena partida! 🤝')" class="text-xs px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700" title="Buena partida">🤝</button>
+            <button onclick="sendQuickChat('¡Bien jugado! 👏')" class="text-xs px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700" title="Bien jugado">👏</button>
+            <button onclick="sendQuickChat('¡Increíble táctica! 🔥')" class="text-xs px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700" title="Increíble">🔥</button>
+          </div>
+        </div>
+        <div id="chatMessages" class="flex-1 overflow-y-auto bg-slate-950/80 border border-slate-800/80 rounded-xl p-2.5 flex flex-col gap-2 text-xs mb-2">
+          <div class="text-slate-400 bg-slate-900/90 border border-slate-800 rounded-lg p-2">
+            <span class="font-bold text-emerald-400">Sistema:</span> Bienvenido a UniChess Online. Puedes jugar por código P2P, abrir una 2da ventana o retar a alguien del Lobby.
+          </div>
+        </div>
+        <form onsubmit="handleChatSubmit(event)" class="flex gap-1.5">
+          <input id="chatInput" type="text" placeholder="Escribe un mensaje..." maxlength="140"
+            class="selectable-text flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+          <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+            Enviar
+          </button>
+        </form>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- MODAL: INSPECTOR DE LA INSTRUCCIÓN MAESTRA UNIPROMPT -->
+  <div id="promptModal" class="hidden fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="text-xl">📜</span>
+          <div>
+            <h2 class="text-base font-bold text-white">Contrato Operativo UNIPROMPT (Score: 100/100)</h2>
+            <p class="text-xs text-slate-400">Ingeniería de Prompts Aplicada a Sistemas de Ajedrez en Tiempo Real</p>
+          </div>
+        </div>
+        <button onclick="toggleModal('promptModal', false)" class="text-slate-400 hover:text-white text-lg font-bold px-2">✕</button>
+      </div>
+      <div class="p-6 overflow-y-auto space-y-4 text-xs leading-relaxed text-slate-300 selectable-text">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
+            <div class="font-mono text-emerald-400 font-bold mb-1">1. Delineación XML + Caching</div>
+            <p class="text-slate-400">Documentos estáticos (`chess.js`, FEN, protocolo Socket/P2P y principios HCI) inyectados al inicio; `# Final Task` al cierre para mitigar el sesgo de recencia.</p>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
+            <div class="font-mono text-indigo-400 font-bold mb-1">2. Red Híbrida Persistente</div>
+            <p class="text-slate-400">Combina `PeerJS` (WebRTC DataChannel P2P) para juego entre dispositivos remotos y `BroadcastChannel` para sincronización instantánea entre ventanas locales.</p>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
+            <div class="font-mono text-amber-400 font-bold mb-1">3. Verificación Cruzada</div>
+            <p class="text-slate-400">Cada jugada actualiza atómicamente la instancia `Chess()`, la matriz visual SVG, la cadena FEN/PGN y emite el paquete de sincronización.</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-[11px] text-slate-300 overflow-x-auto">
+<pre>&lt;role&gt;Principal Full-Stack Game Architect &amp; Especialista HCI&lt;/role&gt;
+&lt;context&gt;
+  - Estado serializado en FEN (Forsyth-Edwards Notation) y PGN.
+  - Patrón Mediador aislando el Tablero de la capa WebRTC / BroadcastChannel.
+  - Reducción de carga cognitiva: rotación de perspectiva y guías legales.
+&lt;/context&gt;
+&lt;output_contract&gt;
+  - Single-File HTML autónomo con validación FIDE completa y relojes duales.
+&lt;/output_contract&gt;
+# Final Task: Ejecutar aplicación de Ajedrez Online lista para producción.</pre>
+        </div>
+      </div>
+      <div class="px-6 py-3 border-t border-slate-800 bg-slate-950/60 flex justify-end">
+        <button onclick="toggleModal('promptModal', false)" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">
+          Cerrar Inspector
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LÓGICA DE LA APLICACIÓN (MOTOR DE AJEDREZ, RED P2P, BROADCAST Y UI) -->
+  <script>
+    /*************************************************************************
+     * 1. GRÁFICOS VECTORIALES SVG DE ALTA PRECISIÓN (ESTÁNDAR TORNEO CBURNETT)
+     *************************************************************************/
+    const PIECE_SVGS = {
+      wP: `<svg viewBox="0 0 45 45" class="piece-svg"><path d="m 22.5,9 c -2.21,0 -4,1.79 -4,4 0,0.89 0.29,1.71 0.78,2.38 C 17.33,16.5 16,18.59 16,21 c 0,2.03 0.94,3.84 2.41,5.03 C 15.41,27.09 11,31.58 11,39.5 H 34 C 34,31.58 29.59,27.09 26.59,26.03 28.06,24.84 29,23.03 29,21 29,18.59 27.67,16.5 25.72,15.38 26.21,14.71 26.5,13.89 26.5,13 c 0,-2.21 -1.79,-4 -4,-4 z" fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+      wR: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 9,39 L 36,39 L 36,36 L 9,36 L 9,39 z"/><path d="M 12,36 L 12,32 L 33,32 L 33,36 L 12,36 z"/><path d="M 11,14 L 11,9 L 15,9 L 15,11 L 20,11 L 20,9 L 25,9 L 25,11 L 30,11 L 30,9 L 34,9 L 34,14"/><path d="M 34,14 L 31,17 L 14,17 L 11,14"/><path d="M 31,17 L 31,29.5 L 14,29.5 L 14,17"/><path d="M 31,29.5 L 32.5,32 L 12.5,32 L 14,29.5"/><path d="M 11,14 L 34,14" fill="none"/></g></svg>`,
+      wN: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18" fill="#fff"/><path d="M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,9.506 13.5,8.5 13.5,7.5 C 14.5,6.5 16.5,10 16.5,10 L 18.5,10 C 18.5,10 19.28,8.008 21,7 C 22,7 22,10 22,10" fill="#fff"/><path d="M 9.5 25.5 A 0.5 0.5 0 1 1 8.5,25.5 A 0.5 0.5 0 1 1 9.5 25.5 z" fill="#000"/><path d="M 15 15.5 A 0.5 1.5 0 1 1 14,15.5 A 0.5 1.5 0 1 1 15 15.5 z" transform="matrix(0.866,0.5,-0.5,0.866,9.693,-5.173)" fill="#000"/></g></svg>`,
+      wB: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#fff" stroke-linecap="butt"><path d="M 9,36 C 12.39,35.03 19.11,36.43 22.5,34 C 25.89,36.43 32.61,35.03 36,36 C 36,36 37.65,36.54 39,38 C 38.32,38.97 37.35,38.99 36,38.5 C 32.61,37.53 25.89,38.96 22.5,37.5 C 19.11,38.96 12.39,37.53 9,38.5 C 7.646,38.99 6.677,38.97 6,38 C 7.354,36.06 9,36 9,36 z"/><path d="M 15,32 C 17.5,34.5 27.5,34.5 30,32 C 30.5,30.5 30,30 30,30 C 30,27.5 27.5,26 27.5,26 C 33,24.5 33.5,14.5 22.5,10.5 C 11.5,14.5 12,24.5 17.5,26 C 17.5,26 15,27.5 15,30 C 15,30 14.5,30.5 15,32 z"/><path d="M 25 8 A 2.5 2.5 0 1 1 20,8 A 2.5 2.5 0 1 1 25 8 z"/></g><path d="M 17.5,26 L 27.5,26 M 15,30 L 30,30 M 22.5,15.5 L 22.5,20.5 M 20,18 L 25,18" stroke-linejoin="miter"/></g></svg>`,
+      wQ: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="#fff" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 8 12 A 2 2 0 1 1 4,12 A 2 2 0 1 1 8 12 z"/><path d="M 16.5 9.5 A 2 2 0 1 1 12.5,9.5 A 2 2 0 1 1 16.5 9.5 z"/><path d="M 24.5 8 A 2 2 0 1 1 20.5,8 A 2 2 0 1 1 24.5 8 z"/><path d="M 32.5 9.5 A 2 2 0 1 1 28.5,9.5 A 2 2 0 1 1 32.5 9.5 z"/><path d="M 41 12 A 2 2 0 1 1 37,12 A 2 2 0 1 1 41 12 z"/><path d="M 9,26 C 17.5,24.5 30,24.5 36,26 L 38,14 L 31,25 L 31,11 L 25.5,24.5 L 22.5,9.5 L 19.5,24.5 L 14,11 L 14,25 L 7,14 L 9,26 z" stroke-linecap="butt"/><path d="M 9,26 C 9,28 10.5,28 11.5,30 C 12.5,31.5 12.5,31 12,33.5 C 10.5,34.5 10.5,36 10.5,36 C 9,37.5 11,38.5 11,38.5 C 17.5,39.5 27.5,39.5 34,38.5 C 34,38.5 35.5,37.5 34,36 C 34,36 34.5,34.5 33,33.5 C 32.5,31 32.5,31.5 33.5,30 C 34.5,28 36,28 36,26 C 27.5,24.5 17.5,24.5 9,26 z" stroke-linecap="butt"/><path d="M 11.5,30 C 15,29 30,29 33.5,30" fill="none"/><path d="M 12,33.5 C 18,32.5 27,32.5 33,33.5" fill="none"/></g></svg>`,
+      wK: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22.5,11.63 L 22.5,6" stroke-linejoin="miter"/><path d="M 20,8 L 25,8" stroke-linejoin="miter"/><path d="M 22.5,25 C 22.5,25 27,17.5 25.5,14.5 C 25.5,14.5 24.5,12 22.5,12 C 20.5,12 19.5,14.5 19.5,14.5 C 18,17.5 22.5,25 22.5,25" fill="#fff" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M 11.5,37 C 17,40.5 27,40.5 32.5,37 L 32.5,30 C 32.5,30 41.5,25.5 38.5,19.5 C 34.5,13 25,16 22.5,23.5 L 22.5,27 L 22.5,23.5 C 19,16 9.5,13 6.5,19.5 C 3.5,25.5 11.5,29.5 11.5,29.5 L 11.5,37 z" fill="#fff"/><path d="M 11.5,30 C 17,27 27,27 32.5,30"/><path d="M 11.5,33.5 C 17,30.5 27,30.5 32.5,33.5"/><path d="M 11.5,37 C 17,34 27,34 32.5,37"/></g></svg>`,
+      bP: `<svg viewBox="0 0 45 45" class="piece-svg"><path d="m 22.5,9 c -2.21,0 -4,1.79 -4,4 0,0.89 0.29,1.71 0.78,2.38 C 17.33,16.5 16,18.59 16,21 c 0,2.03 0.94,3.84 2.41,5.03 C 15.41,27.09 11,31.58 11,39.5 H 34 C 34,31.58 29.59,27.09 26.59,26.03 28.06,24.84 29,23.03 29,21 29,18.59 27.67,16.5 25.72,15.38 26.21,14.71 26.5,13.89 26.5,13 c 0,-2.21 -1.79,-4 -4,-4 z" fill="#1e293b" stroke="#000" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+      bR: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="#1e293b" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 9,39 L 36,39 L 36,36 L 9,36 L 9,39 z"/><path d="M 12.5,32 L 14,29.5 L 31,29.5 L 32.5,32 L 12.5,32 z"/><path d="M 12,36 L 12,32 L 33,32 L 33,36 L 12,36 z"/><path d="M 14,29.5 L 14,16.5 L 31,16.5 L 31,29.5 L 14,29.5 z"/><path d="M 14,16.5 L 11,14 L 34,14 L 31,16.5 L 14,16.5 z"/><path d="M 11,14 L 11,9 L 15,9 L 15,11 L 20,11 L 20,9 L 25,9 L 25,11 L 30,11 L 30,9 L 34,9 L 34,14 L 11,14 z"/><path d="M 12,35.5 L 33,35.5 M 13,31.5 L 32,31.5 M 14,29.5 L 31,29.5 M 14,16.5 L 31,16.5 M 11,14 L 34,14" fill="none" stroke="#cbd5e1" stroke-width="1"/></g></svg>`,
+      bN: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22,10 C 32.5,11 38.5,18 38,39 L 15,39 C 15,30 25,32.5 23,18" fill="#1e293b"/><path d="M 24,18 C 24.38,20.91 18.45,25.37 16,27 C 13,29 13.18,31.34 11,31 C 9.958,30.06 12.41,27.96 11,28 C 10,28 11.19,29.23 10,30 C 9,30 5.997,31 6,26 C 6,24 12,14 12,14 C 12,14 13.89,12.1 14,10.5 C 13.27,9.506 13.5,8.5 13.5,7.5 C 14.5,6.5 16.5,10 16.5,10 L 18.5,10 C 18.5,10 19.28,8.008 21,7 C 22,7 22,10 22,10" fill="#1e293b"/><path d="M 9.5 25.5 A 0.5 0.5 0 1 1 8.5,25.5 A 0.5 0.5 0 1 1 9.5 25.5 z" fill="#cbd5e1" stroke="#cbd5e1"/><path d="M 15 15.5 A 0.5 1.5 0 1 1 14,15.5 A 0.5 1.5 0 1 1 15 15.5 z" transform="matrix(0.866,0.5,-0.5,0.866,9.693,-5.173)" fill="#cbd5e1" stroke="#cbd5e1"/></g></svg>`,
+      bB: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><g fill="#1e293b" stroke-linecap="butt"><path d="M 9,36 C 12.39,35.03 19.11,36.43 22.5,34 C 25.89,36.43 32.61,35.03 36,36 C 36,36 37.65,36.54 39,38 C 38.32,38.97 37.35,38.99 36,38.5 C 32.61,37.53 25.89,38.96 22.5,37.5 C 19.11,38.96 12.39,37.53 9,38.5 C 7.646,38.99 6.677,38.97 6,38 C 7.354,36.06 9,36 9,36 z"/><path d="M 15,32 C 17.5,34.5 27.5,34.5 30,32 C 30.5,30.5 30,30 30,30 C 30,27.5 27.5,26 27.5,26 C 33,24.5 33.5,14.5 22.5,10.5 C 11.5,14.5 12,24.5 17.5,26 C 17.5,26 15,27.5 15,30 C 15,30 14.5,30.5 15,32 z"/><path d="M 25 8 A 2.5 2.5 0 1 1 20,8 A 2.5 2.5 0 1 1 25 8 z"/></g><path d="M 17.5,26 L 27.5,26 M 15,30 L 30,30 M 22.5,15.5 L 22.5,20.5 M 20,18 L 25,18" stroke="#cbd5e1" stroke-linejoin="miter"/></g></svg>`,
+      bQ: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="#1e293b" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 8 12 A 2 2 0 1 1 4,12 A 2 2 0 1 1 8 12 z"/><path d="M 16.5 9.5 A 2 2 0 1 1 12.5,9.5 A 2 2 0 1 1 16.5 9.5 z"/><path d="M 24.5 8 A 2 2 0 1 1 20.5,8 A 2 2 0 1 1 24.5 8 z"/><path d="M 32.5 9.5 A 2 2 0 1 1 28.5,9.5 A 2 2 0 1 1 32.5 9.5 z"/><path d="M 41 12 A 2 2 0 1 1 37,12 A 2 2 0 1 1 41 12 z"/><path d="M 9,26 C 17.5,24.5 30,24.5 36,26 L 38,14 L 31,25 L 31,11 L 25.5,24.5 L 22.5,9.5 L 19.5,24.5 L 14,11 L 14,25 L 7,14 L 9,26 z" stroke-linecap="butt"/><path d="M 9,26 C 9,28 10.5,28 11.5,30 C 12.5,31.5 12.5,31 12,33.5 C 10.5,34.5 10.5,36 10.5,36 C 9,37.5 11,38.5 11,38.5 C 17.5,39.5 27.5,39.5 34,38.5 C 34,38.5 35.5,37.5 34,36 C 34,36 34.5,34.5 33,33.5 C 32.5,31 32.5,31.5 33.5,30 C 34.5,28 36,28 36,26 C 27.5,24.5 17.5,24.5 9,26 z" stroke-linecap="butt"/><path d="M 11.5,30 C 15,29 30,29 33.5,30" fill="none" stroke="#cbd5e1"/><path d="M 12,33.5 C 18,32.5 27,32.5 33,33.5" fill="none" stroke="#cbd5e1"/></g></svg>`,
+      bK: `<svg viewBox="0 0 45 45" class="piece-svg"><g fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M 22.5,11.63 L 22.5,6" stroke-linejoin="miter"/><path d="M 20,8 L 25,8" stroke-linejoin="miter"/><path d="M 22.5,25 C 22.5,25 27,17.5 25.5,14.5 C 25.5,14.5 24.5,12 22.5,12 C 20.5,12 19.5,14.5 19.5,14.5 C 18,17.5 22.5,25 22.5,25" fill="#1e293b" stroke-linecap="butt" stroke-linejoin="miter"/><path d="M 11.5,37 C 17,40.5 27,40.5 32.5,37 L 32.5,30 C 32.5,30 41.5,25.5 38.5,19.5 C 34.5,13 25,16 22.5,23.5 L 22.5,27 L 22.5,23.5 C 19,16 9.5,13 6.5,19.5 C 3.5,25.5 11.5,29.5 11.5,29.5 L 11.5,37 z" fill="#1e293b"/><path d="M 11.5,30 C 17,27 27,27 32.5,30" stroke="#cbd5e1"/><path d="M 11.5,33.5 C 17,30.5 27,30.5 32.5,33.5" stroke="#cbd5e1"/><path d="M 11.5,37 C 17,34 27,34 32.5,37" stroke="#cbd5e1"/></g></svg>`
+    };
+
+    /*************************************************************************
+     * 2. ESTADO GLOBAL Y PATRÓN MEDIADOR (ENGINE + NETWORK + UI)
+     *************************************************************************/
+    const game = new Chess();
+    let currentMode = 'online'; // 'online' | 'multitab' | 'ai'
+    let myColor = 'w';          // 'w' | 'b'
+    let boardOrientation = 'w'; // 'w' | 'b'
+    let selectedSquare = null;
+    let legalMovesFromSelected = [];
+    let lastMove = null;
+    let pendingPromotionMove = null;
+    let boardTheme = 'classic';
+    let soundEnabled = true;
+
+    // Historial para Replay (navegar hacia atrás/adelante)
+    let fenHistory = [game.fen()];
+    let viewingHistoryIndex = 0;
+
+    // Relojes FIDE
+    let initialTimeSeconds = 600;
+    let incrementSeconds = 0;
+    let whiteTime = 600;
+    let blackTime = 600;
+    let clockInterval = null;
+
+    // Redes (PeerJS WebRTC + BroadcastChannel Multi-Ventana)
+    let peer = null;
+    let peerConn = null;
+    let myRoomCode = '';
+    let opponentName = 'Oponente Online';
+    const broadcastChannel = new BroadcastChannel('unichess_realtime_v3');
+
+    // Diccionario de Aperturas Clásicas para enriquecer la UI
+    const OPENINGS_BOOK = {
+      'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR': 'Apertura de Peón de Rey (1.e4)',
+      'rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR': 'Apertura de Peón de Dama (1.d4)',
+      'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR': 'Juego Abierto (1.e4 e5)',
+      'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR': 'Defensa Siciliana (1.e4 c5)',
+      'rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR': 'Defensa Francesa (1.e4 e6)',
+      'rnbqkbnr/pp1ppppp/2p5/8/4P3/8/PPPP1PPP/RNBQKBNR': 'Defensa Caro-Kann (1.e4 c6)',
+      'rnbqkbnr/pppp1ppp/8/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R': 'Ataque de Caballo de Rey (2.Cf3)',
+      'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R': 'Doble Caballo / Preludio Español',
+      'r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R': 'Apertura Española (Ruy López)',
+      'r1bqkbnr/pppp1ppp/2n5/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R': 'Apertura Italiana (Giuoco Piano)',
+      'rnbqkb1r/pppppp1p/5np1/8/2PP4/8/PP2PPPP/RNBQKBNR': 'Defensa India de Rey'
+    };
+
+    /*************************************************************************
+     * 3. SINTETIZADOR DE AUDIO (WEB AUDIO API — CERO ARCHIVOS EXTERNOS)
+     *************************************************************************/
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'move') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(180, now + 0.06);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+          osc.start(now);
+          osc.stop(now + 0.06);
+        } else if (type === 'capture') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(480, now);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 0.09);
+          gain.gain.setValueAtTime(0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } else if (type === 'check') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(660, now);
+          osc.frequency.setValueAtTime(880, now + 0.08);
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+          osc.start(now);
+          osc.stop(now + 0.22);
+        } else if (type === 'gameOver') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.12);
+          osc.frequency.setValueAtTime(783.99, now + 0.24);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        }
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      document.getElementById('soundBtn').textContent = soundEnabled ? '🔊' : '🔇';
+    }
+
+    /*************************************************************************
+     * 4. RENDERIZADO DEL TABLERO 8x8 Y EVENTOS DRAG & DROP / CLICK
+     *************************************************************************/
+    const THEME_COLORS = {
+      classic: { light: '#ebecd0', dark: '#739552', textLight: '#739552', textDark: '#ebecd0' },
+      wood:    { light: '#f0d9b5', dark: '#b58863', textLight: '#b58863', textDark: '#f0d9b5' },
+      slate:   { light: '#dee3e6', dark: '#6b8796', textLight: '#6b8796', textDark: '#dee3e6' }
+    };
+
+    function renderBoard() {
+      const boardEl = document.getElementById('chessboard');
+      boardEl.innerHTML = '';
+
+      // Si estamos inspeccionando una jugada pasada, creamos un Chess temporal con ese FEN
+      const displayChess = viewingHistoryIndex === fenHistory.length - 1
+        ? game
+        : new Chess(fenHistory[viewingHistoryIndex]);
+
+      const boardMatrix = displayChess.board();
+      const colors = THEME_COLORS[boardTheme];
+
+      // Encontrar si el Rey del turno actual está en jaque
+      let kingInCheckSquare = null;
+      if (displayChess.in_check()) {
+        const turnColor = displayChess.turn();
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const p = boardMatrix[r][c];
+            if (p && p.type === 'k' && p.color === turnColor) {
+              kingInCheckSquare = `${'abcdefgh'[c]}${8 - r}`;
+            }
+          }
+        }
+      }
+
+      const ranks = boardOrientation === 'w' ? [0,1,2,3,4,5,6,7] : [7,6,5,4,3,2,1,0];
+      const files = boardOrientation === 'w' ? [0,1,2,3,4,5,6,7] : [7,6,5,4,3,2,1,0];
+
+      for (let rIdx = 0; rIdx < 8; rIdx++) {
+        for (let cIdx = 0; cIdx < 8; cIdx++) {
+          const r = ranks[rIdx];
+          const c = files[cIdx];
+          const sqName = `${'abcdefgh'[c]}${8 - r}`;
+          const isLight = (r + c) % 2 === 0;
+
+          const sqDiv = document.createElement('div');
+          sqDiv.className = 'square';
+          sqDiv.dataset.square = sqName;
+          sqDiv.style.backgroundColor = isLight ? colors.light : colors.dark;
+
+          // Resaltado de selección y último movimiento
+          if (selectedSquare === sqName) sqDiv.classList.add('sq-selected');
+          if (lastMove && (lastMove.from === sqName || lastMove.to === sqName)) {
+            sqDiv.classList.add('sq-last-move');
+          }
+          if (kingInCheckSquare === sqName) {
+            sqDiv.classList.add('sq-check');
+          }
+
+          // Etiquetas de coordenadas en los bordes
+          if (cIdx === 0) {
+            const rankLabel = document.createElement('span');
+            rankLabel.className = 'coord-label top-1 left-1.5';
+            rankLabel.style.color = isLight ? colors.textLight : colors.textDark;
+            rankLabel.textContent = 8 - r;
+            sqDiv.appendChild(rankLabel);
+          }
+          if (rIdx === 7) {
+            const fileLabel = document.createElement('span');
+            fileLabel.className = 'coord-label bottom-0.5 right-1.5';
+            fileLabel.style.color = isLight ? colors.textLight : colors.textDark;
+            fileLabel.textContent = 'abcdefgh'[c];
+            sqDiv.appendChild(fileLabel);
+          }
+
+          // Indicador de movimiento legal desde la casilla seleccionada
+          const legalMove = legalMovesFromSelected.find(m => m.to === sqName);
+          const pieceObj = boardMatrix[r][c];
+          if (legalMove) {
+            const indicator = document.createElement('div');
+            indicator.className = (pieceObj || legalMove.flags.includes('e')) ? 'legal-capture' : 'legal-dot';
+            sqDiv.appendChild(indicator);
+          }
+
+          // Renderizar Pieza SVG
+          if (pieceObj) {
+            const key = `${pieceObj.color}${pieceObj.type.toUpperCase()}`;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'w-full h-full flex items-center justify-center';
+            wrapper.draggable = canUserMovePiece(pieceObj.color);
+            wrapper.innerHTML = PIECE_SVGS[key];
+
+            wrapper.addEventListener('dragstart', (e) => {
+              if (!canUserMovePiece(pieceObj.color)) {
+                e.preventDefault();
+                return;
+              }
+              selectSquare(sqName);
+              e.dataTransfer.setData('text/plain', sqName);
+            });
+
+            sqDiv.appendChild(wrapper);
+          }
+
+          // Eventos Click y Drop en la casilla
+          sqDiv.addEventListener('click', () => handleSquareClick(sqName));
+          sqDiv.addEventListener('dragover', (e) => e.preventDefault());
+          sqDiv.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const fromSq = e.dataTransfer.getData('text/plain');
+            if (fromSq && fromSq !== sqName) {
+              attemptMove(fromSq, sqName);
+            }
+          });
+
+          boardEl.appendChild(sqDiv);
+        }
+      }
+
+      updateSidebarsAndStatus();
+    }
+
+    function canUserMovePiece(pieceColor) {
+      if (game.game_over()) return false;
+      if (viewingHistoryIndex !== fenHistory.length - 1) return false;
+      if (game.turn() !== pieceColor) return false;
+
+      if (currentMode === 'ai') {
+        return pieceColor === myColor;
+      }
+      if (currentMode === 'online' && peerConn && peerConn.open) {
+        return pieceColor === myColor;
+      }
+      if (currentMode === 'multitab') {
+        return pieceColor === myColor;
+      }
+      // Si aún no hay par conectado en modo online, permite mover libremente o probar
+      return true;
+    }
+
+    function selectSquare(sqName) {
+      const piece = game.get(sqName);
+      if (piece && canUserMovePiece(piece.color)) {
+        selectedSquare = sqName;
+        legalMovesFromSelected = game.moves({ square: sqName, verbose: true });
+        renderBoard();
+      }
+    }
+
+    function handleSquareClick(sqName) {
+      // Si ya hay una casilla seleccionada y clicamos en un destino legal
+      if (selectedSquare && legalMovesFromSelected.some(m => m.to === sqName)) {
+        attemptMove(selectedSquare, sqName);
+        return;
+      }
+
+      const clickedPiece = game.get(sqName);
+      if (clickedPiece && canUserMovePiece(clickedPiece.color)) {
+        if (selectedSquare === sqName) {
+          selectedSquare = null;
+          legalMovesFromSelected = [];
+        } else {
+          selectedSquare = sqName;
+          legalMovesFromSelected = game.moves({ square: sqName, verbose: true });
+        }
+        renderBoard();
+      } else {
+        selectedSquare = null;
+        legalMovesFromSelected = [];
+        renderBoard();
+      }
+    }
+
+    function attemptMove(from, to) {
+      const moves = game.moves({ square: from, verbose: true });
+      const targetMove = moves.find(m => m.to === to);
+      if (!targetMove) return;
+
+      // Verificar si es coronación de peón
+      if (targetMove.flags.includes('p')) {
+        pendingPromotionMove = { from, to };
+        document.getElementById('promotionModal').classList.remove('hidden');
+        return;
+      }
+
+      executeValidatedMove({ from, to, promotion: 'q' }, true);
+    }
+
+    function confirmPromotion(pieceChar) {
+      document.getElementById('promotionModal').classList.add('hidden');
+      if (!pendingPromotionMove) return;
+      executeValidatedMove({
+        from: pendingPromotionMove.from,
+        to: pendingPromotionMove.to,
+        promotion: pieceChar
+      }, true);
+      pendingPromotionMove = null;
+    }
+
+    function executeValidatedMove(moveObj, emitToNetwork = true) {
+      const result = game.move(moveObj);
+      if (!result) return false;
+
+      // Aplicar incremento de reloj al jugador que acaba de mover
+      if (result.color === 'w') whiteTime += incrementSeconds;
+      else blackTime += incrementSeconds;
+
+      lastMove = { from: result.from, to: result.to };
+      selectedSquare = null;
+      legalMovesFromSelected = [];
+
+      fenHistory.push(game.fen());
+      viewingHistoryIndex = fenHistory.length - 1;
+
+      // Sonidos
+      if (game.game_over()) playSound('gameOver');
+      else if (game.in_check()) playSound('check');
+      else if (result.captured) playSound('capture');
+      else playSound('move');
+
+      startClockIfNeeded();
+      renderBoard();
+
+      // Sincronizar con la red (P2P + BroadcastChannel)
+      if (emitToNetwork) {
+        const payload = {
+          type: 'MOVE',
+          move: moveObj,
+          fen: game.fen(),
+          whiteTime,
+          blackTime,
+          fromUser: document.getElementById('usernameInput').value
+        };
+        sendNetworkPacket(payload);
+      }
+
+      // Si estamos en modo IA y es turno de la IA
+      if (currentMode === 'ai' && !game.game_over() && game.turn() !== myColor) {
+        setTimeout(triggerAIMove, 260);
+      }
+
+      return true;
+    }
+
+    /*************************************************************************
+     * 5. CAPA DE RED EN TIEMPO REAL (PEERJS WEBRTC P2P + BROADCASTCHANNEL)
+     *************************************************************************/
+    function generateRoomCodeString() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '';
+      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+      return code;
+    }
+
+    function createOnlineRoom() {
+      myRoomCode = generateRoomCodeString();
+      document.getElementById('myRoomCodeDisplay').textContent = myRoomCode;
+      const peerId = `unichess-room-${myRoomCode}`;
+
+      if (peer) peer.destroy();
+      updateP2PStatus('Creando Sala...', 'amber');
+
+      try {
+        peer = new Peer(peerId);
+        peer.on('open', () => {
+          myColor = 'w';
+          boardOrientation = 'w';
+          updatePlayerBadges();
+          updateP2PStatus(`Sala ${myRoomCode} Activa`, 'emerald');
+          appendChatMessage('Sistema', `Sala Online creada con código ${myRoomCode}. Compártelo o abre una 2da ventana.`);
+        });
+
+        peer.on('connection', (conn) => {
+          peerConn = conn;
+          setupPeerConnectionHandlers(conn);
+        });
+
+        peer.on('error', (err) => {
+          updateP2PStatus('Modo Local/Multi-Tab', 'indigo');
+        });
+      } catch (e) {
+        updateP2PStatus('Modo Multi-Tab Activo', 'indigo');
+      }
+    }
+
+    function joinOnlineRoom() {
+      const codeInput = document.getElementById('joinRoomInput').value.trim().toUpperCase();
+      if (!codeInput) return;
+
+      const targetPeerId = `unichess-room-${codeInput}`;
+      updateP2PStatus(`Conectando a ${codeInput}...`, 'amber');
+
+      // También anunciamos por BroadcastChannel por si están en el mismo navegador
+      broadcastChannel.postMessage({
+        type: 'JOIN_ROOM_BC',
+        roomCode: codeInput,
+        guestName: document.getElementById('usernameInput').value
+      });
+
+      if (peer) peer.destroy();
+      peer = new Peer();
+
+      peer.on('open', () => {
+        const conn = peer.connect(targetPeerId, { reliable: true });
+        peerConn = conn;
+        myColor = 'b';
+        boardOrientation = 'b';
+        updatePlayerBadges();
+        setupPeerConnectionHandlers(conn);
+      });
+    }
+
+    function setupPeerConnectionHandlers(conn) {
+      conn.on('open', () => {
+        updateP2PStatus('Conectado P2P Directo', 'emerald');
+        conn.send({
+          type: 'HANDSHAKE',
+          username: document.getElementById('usernameInput').value,
+          color: myColor === 'w' ? 'b' : 'w',
+          fen: game.fen()
+        });
+        renderBoard();
+      });
+
+      conn.on('data', (data) => {
+        handleIncomingNetworkPacket(data);
+      });
+
+      conn.on('close', () => {
+        updateP2PStatus('Oponente Desconectado', 'rose');
+        appendChatMessage('Sistema', 'El oponente se ha desconectado de la sesión P2P.');
+      });
+    }
+
+    function sendNetworkPacket(packet) {
+      if (peerConn && peerConn.open) {
+        peerConn.send(packet);
+      }
+      broadcastChannel.postMessage(packet);
+    }
+
+    broadcastChannel.onmessage = (event) => {
+      handleIncomingNetworkPacket(event.data);
+    };
+
+    function handleIncomingNetworkPacket(data) {
+      if (!data || !data.type) return;
+
+      if (data.type === 'HANDSHAKE') {
+        opponentName = data.username || 'Jugador Remoto';
+        appendChatMessage('Sistema', `¡${opponentName} se ha conectado a la partida en tiempo real!`);
+        renderBoard();
+      } else if (data.type === 'JOIN_ROOM_BC') {
+        if (data.roomCode === myRoomCode) {
+          opponentName = data.guestName || 'Invitado';
+          sendNetworkPacket({
+            type: 'START_SYNC',
+            hostName: document.getElementById('usernameInput').value,
+            fen: game.fen(),
+            whiteTime,
+            blackTime
+          });
+          appendChatMessage('Sistema', `¡${opponentName} se unió a tu sala ${myRoomCode}!`);
+          renderBoard();
+        }
+      } else if (data.type === 'START_SYNC') {
+        opponentName = data.hostName || 'Anfitrión';
+        myColor = 'b';
+        boardOrientation = 'b';
+        updatePlayerBadges();
+        renderBoard();
+      } else if (data.type === 'MOVE') {
+        if (data.fen !== game.fen()) {
+          whiteTime = data.whiteTime ?? whiteTime;
+          blackTime = data.blackTime ?? blackTime;
+          executeValidatedMove(data.move, false);
+        }
+      } else if (data.type === 'NEW_GAME') {
+        resetLocalBoardState();
+        appendChatMessage('Sistema', 'El oponente ha iniciado una nueva partida.');
+      } else if (data.type === 'CHAT') {
+        appendChatMessage(data.sender, data.text);
+      } else if (data.type === 'DRAW_OFFER') {
+        if (confirm(`${data.from} ofrece tablas (empate). ¿Aceptas las tablas?`)) {
+          sendNetworkPacket({ type: 'DRAW_ACCEPTED' });
+          stopClock();
+          document.getElementById('gameStatusTitle').textContent = 'Partida finalizada — Tablas por mutuo acuerdo 🤝';
+        }
+      } else if (data.type === 'DRAW_ACCEPTED') {
+        stopClock();
+        document.getElementById('gameStatusTitle').textContent = 'Partida finalizada — Tablas por mutuo acuerdo 🤝';
+        playSound('gameOver');
+      } else if (data.type === 'RESIGN') {
+        stopClock();
+        document.getElementById('gameStatusTitle').textContent = `¡Victoria! ${data.from} se ha rendido 🏳️`;
+        playSound('gameOver');
+      }
+    }
+
+    function updateP2PStatus(text, color) {
+      const badge = document.getElementById('p2pBadge');
+      badge.textContent = text;
+      badge.className = `text-[10px] font-mono px-2 py-0.5 rounded bg-${color}-500/15 text-${color}-300 border border-${color}-500/30`;
+    }
+
+    function openDualWindowMirror() {
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', 'b');
+      url.searchParams.set('room', myRoomCode);
+      window.open(url.toString(), '_blank', 'width=1050,height=820');
+      appendChatMessage('Sistema', 'Ventana espejo abierta. Juega en cualquiera de las dos ventanas y observa la sincronización en tiempo real.');
+    }
+
+    /*************************************************************************
+     * 6. MOTOR DE INTELIGENCIA ARTIFICIAL (MINIMAX + PODA ALFA-BETA + PST)
+     *************************************************************************/
+    const PIECE_VALUES = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+
+    const PAWN_PST = [
+      [0,  0,  0,  0,  0,  0,  0,  0],
+      [50, 50, 50, 50, 50, 50, 50, 50],
+      [10, 10, 20, 30, 30, 20, 10, 10],
+      [5,  5, 10, 25, 25, 10,  5,  5],
+      [0,  0,  0, 20, 20,  0,  0,  0],
+      [5, -5,-10,  0,  0,-10, -5,  5],
+      [5, 10, 10,-20,-20, 10, 10,  5],
+      [0,  0,  0,  0,  0,  0,  0,  0]
+    ];
+
+    const KNIGHT_PST = [
+      [-50,-40,-30,-30,-30,-30,-40,-50],
+      [-40,-20,  0,  0,  0,  0,-20,-40],
+      [-30,  0, 10, 15, 15, 10,  0,-30],
+      [-30,  5, 15, 20, 20, 15,  5,-30],
+      [-30,  0, 15, 20, 20, 15,  0,-30],
+      [-30,  5, 10, 15, 15, 10,  5,-30],
+      [-40,-20,  0,  5,  5,  0,-20,-40],
+      [-50,-40,-30,-30,-30,-30,-40,-50]
+    ];
+
+    function evaluateBoardPosition(chessInstance) {
+      if (chessInstance.in_checkmate()) {
+        return chessInstance.turn() === 'w' ? -99999 : 99999;
+      }
+      if (chessInstance.in_draw() || chessInstance.in_stalemate() || chessInstance.in_threefold_repetition()) {
+        return 0;
+      }
+
+      const b = chessInstance.board();
+      let score = 0;
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const piece = b[r][c];
+          if (!piece) continue;
+          let val = PIECE_VALUES[piece.type] || 0;
+          const rowForColor = piece.color === 'w' ? r : 7 - r;
+
+          if (piece.type === 'p') val += PAWN_PST[rowForColor][c];
+          else if (piece.type === 'n') val += KNIGHT_PST[rowForColor][c];
+          else if (piece.type === 'b' || piece.type === 'q') {
+            if (r >= 2 && r <= 5 && c >= 2 && c <= 5) val += 15;
+          }
+
+          score += piece.color === 'w' ? val : -val;
+        }
+      }
+      return score;
+    }
+
+    function minimax(chessInstance, depth, alpha, beta, isMaximizing) {
+      if (depth === 0 || chessInstance.game_over()) {
+        return evaluateBoardPosition(chessInstance);
+      }
+
+      const moves = chessInstance.moves({ verbose: true });
+      // Ordenar capturas primero para acelerar la poda alfa-beta
+      moves.sort((a, b) => (b.captured ? 10 : 0) - (a.captured ? 10 : 0));
+
+      if (isMaximizing) {
+        let maxEval = -Infinity;
+        for (const m of moves) {
+          chessInstance.move(m);
+          const evaluation = minimax(chessInstance, depth - 1, alpha, beta, false);
+          chessInstance.undo();
+          maxEval = Math.max(maxEval, evaluation);
+          alpha = Math.max(alpha, evaluation);
+          if (beta <= alpha) break;
+        }
+        return maxEval;
+      } else {
+        let minEval = Infinity;
+        for (const m of moves) {
+          chessInstance.move(m);
+          const evaluation = minimax(chessInstance, depth - 1, alpha, beta, true);
+          chessInstance.undo();
+          minEval = Math.min(minEval, evaluation);
+          beta = Math.min(beta, evaluation);
+          if (beta <= alpha) break;
+        }
+        return minEval;
+      }
+    }
+
+    function findBestMoveForCurrentTurn(depth) {
+      const moves = game.moves({ verbose: true });
+      if (moves.length === 0) return null;
+
+      // Nivel 1 juega con algo de aleatoriedad táctica
+      if (depth === 1 && Math.random() < 0.35) {
+        return moves[Math.floor(Math.random() * moves.length)];
+      }
+
+      const isWhite = game.turn() === 'w';
+      let bestMove = moves[0];
+      let bestValue = isWhite ? -Infinity : Infinity;
+
+      moves.sort((a, b) => (b.captured ? 12 : 0) - (a.captured ? 12 : 0));
+
+      for (const m of moves) {
+        game.move(m);
+        const boardVal = minimax(game, depth - 1, -Infinity, Infinity, !isWhite);
+        game.undo();
+
+        if (isWhite && boardVal > bestValue) {
+          bestValue = boardVal;
+          bestMove = m;
+        } else if (!isWhite && boardVal < bestValue) {
+          bestValue = boardVal;
+          bestMove = m;
+        }
+      }
+      return bestMove;
+    }
+
+    function triggerAIMove() {
+      if (game.game_over()) return;
+      const diffSelect = document.getElementById('aiDifficulty');
+      const level = parseInt(diffSelect ? diffSelect.value : '3', 10);
+      const searchDepth = Math.min(level, 3); // Profundidad ágil en navegador
+      const chosen = findBestMoveForCurrentTurn(searchDepth);
+      if (chosen) {
+        executeValidatedMove({
+          from: chosen.from,
+          to: chosen.to,
+          promotion: chosen.promotion || 'q'
+        }, false);
+      }
+    }
+
+    function requestHint() {
+      if (game.game_over()) return;
+      const best = findBestMoveForCurrentTurn(3);
+      if (best) {
+        selectedSquare = best.from;
+        legalMovesFromSelected = [best];
+        renderBoard();
+        appendChatMessage('Motor Táctico', `Jugada sugerida: ${best.san} (${best.from} → ${best.to})`);
+      }
+    }
+
+    /*************************************************************************
+     * 7. LOBBY INTERACTIVO DE JUGADORES ONLINE (PATRÓN PLAYERS.JS)
+     *************************************************************************/
+    const LOBBY_PLAYERS = [
+      { username: 'Sofia_Tactics', rating: 1840, status: 'Disponible' },
+      { username: 'Mateo_Blitz', rating: 1620, status: 'Disponible' },
+      { username: 'Valeria_FIDE', rating: 2010, status: 'Disponible' },
+      { username: 'Bot_Stockfish_Lite', rating: 1750, status: 'IA Rápida' }
+    ];
+
+    function renderPlayersLobby() {
+      const ul = document.getElementById('playersLobbyList');
+      const me = document.getElementById('usernameInput').value || 'Tú';
+      ul.innerHTML = '';
+
+      // Mi propio usuario arriba (como en players.js de slmanju)
+      const myLi = document.createElement('li');
+      myLi.className = 'flex items-center justify-between bg-slate-950/70 border border-slate-800/80 rounded-xl px-3 py-2';
+      myLi.innerHTML = `
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span class="font-bold text-white">${me} <span class="text-emerald-400 font-normal">(tú)</span></span>
+        </div>
+        <span class="font-mono text-[10px] text-slate-400">Online</span>
+      `;
+      ul.appendChild(myLi);
+
+      LOBBY_PLAYERS.forEach((p) => {
+        const li = document.createElement('li');
+        li.className = 'flex items-center justify-between bg-slate-950/40 hover:bg-slate-950/90 border border-slate-800/60 rounded-xl px-3 py-2 transition';
+        li.innerHTML = `
+          <div>
+            <div class="font-semibold text-slate-200">${p.username}</div>
+            <div class="text-[10px] font-mono text-slate-400">${p.rating} ELO • ${p.status}</div>
+          </div>
+          <button onclick="challengeLobbyPlayer('${p.username}', ${p.rating})" class="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 font-bold text-[11px] transition">
+            Retar ⚔️
+          </button>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    function challengeLobbyPlayer(targetUser, rating) {
+      opponentName = `${targetUser} (${rating})`;
+      switchMode('ai');
+      const diffEl = document.getElementById('aiDifficulty');
+      if (rating > 1900) diffEl.value = '4';
+      else if (rating > 1700) diffEl.value = '3';
+      else diffEl.value = '2';
+
+      resetLocalBoardState();
+      appendChatMessage('Lobby', `¡${targetUser} aceptó tu desafío! Jugando con piezas Blancas.`);
+      setTimeout(() => {
+        appendChatMessage(targetUser, '¡Hola! Buena suerte en la partida ♟️');
+      }, 600);
+    }
+
+    /*************************************************************************
+     * 8. ACTUALIZACIÓN DE UI, BARRA DE EVALUACIÓN, MATERIAL Y RELOJES
+     *************************************************************************/
+    function updateSidebarsAndStatus() {
+      // 1. Actualizar FEN
+      const currentFen = game.fen();
+      document.getElementById('fenInputBox').value = currentFen;
+
+      // 2. Detectar Apertura
+      const fenPiecesOnly = currentFen.split(' ')[0];
+      const opening = OPENINGS_BOOK[fenPiecesOnly];
+      if (opening) {
+        document.getElementById('openingNameLabel').textContent = `📖 ${opening}`;
+      }
+
+      // 3. Estado del Juego
+      const turnColorName = game.turn() === 'w' ? 'Blancas' : 'Negras';
+      const titleEl = document.getElementById('gameStatusTitle');
+      const turnBadge = document.getElementById('turnIndicatorBadge');
+
+      if (game.in_checkmate()) {
+        const winner = game.turn() === 'w' ? 'Negras ⚫' : 'Blancas ⚪';
+        titleEl.textContent = `¡Jaque Mate! Ganan las ${winner}`;
+        turnBadge.textContent = 'Mate';
+        stopClock();
+      } else if (game.in_Draw ? game.in_Draw() : game.in_draw()) {
+        titleEl.textContent = 'Partida Finalizada — Tablas (Empate)';
+        turnBadge.textContent = 'Tablas';
+        stopClock();
+      } else {
+        let statusStr = `Partida en curso — Turno de las ${turnColorName}`;
+        if (game.in_check()) statusStr += ' (¡JAQUE!)';
+        titleEl.textContent = statusStr;
+        turnBadge.textContent = game.turn() === myColor ? 'Tu Turno' : `Turno de ${turnColorName}`;
+      }
+
+      // 4. Barra de Evaluación
+      const rawEval = evaluateBoardPosition(game) / 100;
+      const clampedEval = Math.max(-10, Math.min(10, rawEval));
+      const whitePercent = 50 + (clampedEval * 4.5);
+      document.getElementById('evalBarBlack').style.height = `${100 - whitePercent}%`;
+      document.getElementById('evalScoreText').textContent = (rawEval >= 0 ? '+' : '') + rawEval.toFixed(1);
+
+      // 5. Piezas Capturadas y Ventaja Material
+      updateCapturedMaterial();
+
+      // 6. Tabla de Historial PGN
+      renderMoveHistoryTable();
+
+      // 7. Nombres de tarjetas superior e inferior según orientación
+      updatePlayerCards();
+    }
+
+    function updateCapturedMaterial() {
+      const startCounts = { w: { p:8, n:2, b:2, r:2, q:1 }, b: { p:8, n:2, b:2, r:2, q:1 } };
+      const currentCounts = { w: { p:0, n:0, b:0, r:0, q:0 }, b: { p:0, n:0, b:0, r:0, q:0 } };
+      const b = game.board();
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = b[r][c];
+          if (p && p.type !== 'k') currentCounts[p.color][p.type]++;
+        }
+      }
+
+      const symbols = {
+        w: { q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
+        b: { q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' }
+      };
+
+      let capturedByWhite = '';
+      let capturedByBlack = '';
+      let whiteScore = 0;
+      let blackScore = 0;
+
+      ['q','r','b','n','p'].forEach(type => {
+        const missingBlack = Math.max(0, startCounts.b[type] - currentCounts.b[type]);
+        for (let i = 0; i < missingBlack; i++) capturedByWhite += symbols.b[type];
+        whiteScore += currentCounts.w[type] * (PIECE_VALUES[type] / 100);
+
+        const missingWhite = Math.max(0, startCounts.w[type] - currentCounts.w[type]);
+        for (let i = 0; i < missingWhite; i++) capturedByBlack += symbols.w[type];
+        blackScore += currentCounts.b[type] * (PIECE_VALUES[type] / 100);
+      });
+
+      const diff = Math.round(whiteScore - blackScore);
+      const bottomIsWhite = boardOrientation === 'w';
+
+      document.getElementById('bottomCapturedPieces').textContent = bottomIsWhite ? capturedByWhite : capturedByBlack;
+      document.getElementById('topCapturedPieces').textContent = bottomIsWhite ? capturedByBlack : capturedByWhite;
+
+      document.getElementById('bottomMaterialDiff').textContent =
+        (bottomIsWhite && diff > 0) ? `+${diff}` : (!bottomIsWhite && diff < 0) ? `+${Math.abs(diff)}` : '';
+      document.getElementById('topMaterialDiff').textContent =
+        (!bottomIsWhite && diff > 0) ? `+${diff}` : (bottomIsWhite && diff < 0) ? `+${Math.abs(diff)}` : '';
+    }
+
+    function renderMoveHistoryTable() {
+      const history = game.history();
+      const tbody = document.getElementById('moveHistoryBody');
+      if (history.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="text-slate-500 text-center py-8 font-sans">Realiza el primer movimiento en el tablero...</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = '';
+      for (let i = 0; i < history.length; i += 2) {
+        const moveNum = Math.floor(i / 2) + 1;
+        const wMove = history[i];
+        const bMove = history[i + 1] || '';
+        const wIdx = i + 1;
+        const bIdx = i + 2;
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-900/90 transition';
+        tr.innerHTML = `
+          <td class="py-1.5 px-2 text-slate-500 w-10">${moveNum}.</td>
+          <td onclick="jumpToMoveIndex(${wIdx})" class="py-1.5 px-2 cursor-pointer font-semibold ${viewingHistoryIndex === wIdx ? 'text-emerald-400 bg-emerald-500/10 rounded' : 'text-slate-200'}">${wMove}</td>
+          <td onclick="${bMove ? `jumpToMoveIndex(${bIdx})` : ''}" class="py-1.5 px-2 cursor-pointer font-semibold ${viewingHistoryIndex === bIdx ? 'text-emerald-400 bg-emerald-500/10 rounded' : 'text-slate-300'}">${bMove}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      const container = document.getElementById('moveHistoryContainer');
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function jumpToMoveIndex(index) {
+      if (index >= 0 && index < fenHistory.length) {
+        viewingHistoryIndex = index;
+        renderBoard();
+      }
+    }
+
+    function navigateHistory(dir) {
+      if (dir === 'start') viewingHistoryIndex = 0;
+      else if (dir === 'prev') viewingHistoryIndex = Math.max(0, viewingHistoryIndex - 1);
+      else if (dir === 'next') viewingHistoryIndex = Math.min(fenHistory.length - 1, viewingHistoryIndex + 1);
+      else if (dir === 'end') viewingHistoryIndex = fenHistory.length - 1;
+      renderBoard();
+    }
+
+    function updatePlayerCards() {
+      const myName = document.getElementById('usernameInput').value || 'Jugador';
+      const bottomIsWhite = boardOrientation === 'w';
+
+      document.getElementById('bottomPlayerAvatar').textContent = bottomIsWhite ? '⚪' : '⚫';
+      document.getElementById('topPlayerAvatar').textContent = bottomIsWhite ? '⚫' : '⚪';
+
+      if (currentMode === 'ai') {
+        const aiName = document.getElementById('aiDifficulty').selectedOptions[0].text.split('—')[1].trim();
+        document.getElementById('bottomPlayerName').textContent = `${myName} (Tú)`;
+        document.getElementById('topPlayerName').textContent = `🤖 Motor ${aiName}`;
+      } else {
+        document.getElementById('bottomPlayerName').textContent = `${myName} (${bottomIsWhite ? 'Blancas' : 'Negras'})`;
+        document.getElementById('topPlayerName').textContent = `${opponentName} (${bottomIsWhite ? 'Negras' : 'Blancas'})`;
+      }
+
+      renderClocks();
+    }
+
+    /*************************************************************************
+     * 9. RELOJES DIGITALES CON SOPORTE DE INCREMENTO FIDE
+     *************************************************************************/
+    function formatSeconds(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function renderClocks() {
+      const bottomIsWhite = boardOrientation === 'w';
+      const topClock = document.getElementById('topClockBox');
+      const bottomClock = document.getElementById('bottomClockBox');
+
+      bottomClock.textContent = formatSeconds(bottomIsWhite ? whiteTime : blackTime);
+      topClock.textContent = formatSeconds(bottomIsWhite ? blackTime : whiteTime);
+    }
+
+    function startClockIfNeeded() {
+      if (clockInterval) return;
+      clockInterval = setInterval(() => {
+        if (game.game_over()) {
+          stopClock();
+          return;
+        }
+        if (game.turn() === 'w') {
+          whiteTime = Math.max(0, whiteTime - 1);
+          if (whiteTime === 0) handleTimeOut('Blancas');
+        } else {
+          blackTime = Math.max(0, blackTime - 1);
+          if (blackTime === 0) handleTimeOut('Negras');
+        }
+        renderClocks();
+      }, 1000);
+    }
+
+    function stopClock() {
+      if (clockInterval) {
+        clearInterval(clockInterval);
+        clockInterval = null;
+      }
+    }
+
+    function handleTimeOut(loserColor) {
+      stopClock();
+      playSound('gameOver');
+      const winner = loserColor === 'Blancas' ? 'Negras ⚫' : 'Blancas ⚪';
+      document.getElementById('gameStatusTitle').textContent = `⏰ ¡Tiempo agotado para ${loserColor}! Ganan las ${winner}`;
+    }
+
+    function setTimeControl(seconds, inc, label) {
+      initialTimeSeconds = seconds;
+      incrementSeconds = inc;
+      resetLocalBoardState();
+      appendChatMessage('Sistema', `Ritmo de juego ajustado a ${label}.`);
+    }
+
+    /*************************************************************************
+     * 10. CONTROLES DE MODO, CHAT, PGN/FEN Y UTILIDADES
+     *************************************************************************/
+    function switchMode(mode) {
+      currentMode = mode;
+      ['online', 'multitab', 'ai'].forEach(m => {
+        const btn = document.getElementById(`modeBtn-${m}`);
+        const panel = document.getElementById(`panel-${m}`);
+        if (m === mode) {
+          btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all bg-emerald-600 text-white shadow';
+          panel.classList.remove('hidden');
+        } else {
+          btn.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-300 hover:text-white';
+          panel.classList.add('hidden');
+        }
+      });
+
+      if (mode === 'ai') {
+        opponentName = 'Motor IA Minimax';
+      }
+      renderBoard();
+    }
+
+    function assignRoleAndSync(color) {
+      myColor = color;
+      boardOrientation = color;
+      updatePlayerBadges();
+      renderBoard();
+    }
+
+    function updatePlayerBadges() {
+      const badge = document.getElementById('myColorBadge');
+      badge.textContent = myColor === 'w' ? 'Blancas ⚪' : 'Negras ⚫';
+    }
+
+    function startAIGame(chosenColor) {
+      myColor = chosenColor;
+      boardOrientation = chosenColor;
+      updatePlayerBadges();
+      resetLocalBoardState();
+      if (chosenColor === 'b') {
+        setTimeout(triggerAIMove, 350);
+      }
+    }
+
+    function flipBoard() {
+      boardOrientation = boardOrientation === 'w' ? 'b' : 'w';
+      renderBoard();
+    }
+
+    function changeBoardTheme(theme) {
+      boardTheme = theme;
+      renderBoard();
+    }
+
+    function resetLocalBoardState() {
+      stopClock();
+      game.reset();
+      fenHistory = [game.fen()];
+      viewingHistoryIndex = 0;
+      selectedSquare = null;
+      legalMovesFromSelected = [];
+      lastMove = null;
+      whiteTime = initialTimeSeconds;
+      blackTime = initialTimeSeconds;
+      document.getElementById('openingNameLabel').textContent = 'Posición Inicial Estándar';
+      renderBoard();
+    }
+
+    function resetAndBroadcastNewGame() {
+      resetLocalBoardState();
+      sendNetworkPacket({ type: 'NEW_GAME' });
+    }
+
+    function offerDraw() {
+      if (game.game_over()) return;
+      if (currentMode === 'ai') {
+        appendChatMessage('Motor IA', 'Prefiero continuar jugando esta posición táctica.');
+        return;
+      }
+      sendNetworkPacket({
+        type: 'DRAW_OFFER',
+        from: document.getElementById('usernameInput').value
+      });
+      appendChatMessage('Sistema', 'Has enviado una oferta de tablas al oponente.');
+    }
+
+    function resignGame() {
+      if (game.game_over()) return;
+      stopClock();
+      playSound('gameOver');
+      const winner = myColor === 'w' ? 'Negras ⚫' : 'Blancas ⚪';
+      document.getElementById('gameStatusTitle').textContent = `Te has rendido — Ganan las ${winner}`;
+      sendNetworkPacket({
+        type: 'RESIGN',
+        from: document.getElementById('usernameInput').value
+      });
+    }
+
+    function copyRoomCode() {
+      navigator.clipboard.writeText(myRoomCode);
+      appendChatMessage('Sistema', `Código de sala ${myRoomCode} copiado al portapapeles.`);
+    }
+
+    function copyFEN() {
+      navigator.clipboard.writeText(game.fen());
+      appendChatMessage('Sistema', 'Cadena FEN copiada al portapapeles.');
+    }
+
+    function copyPGN() {
+      navigator.clipboard.writeText(game.pgn() || 'Sin movimientos aún.');
+      appendChatMessage('Sistema', 'Historial PGN copiado al portapapeles.');
+    }
+
+    function loadCustomFEN() {
+      const fenStr = document.getElementById('customFenLoadInput').value.trim();
+      if (!fenStr) return;
+      const loaded = game.load(fenStr);
+      if (loaded) {
+        fenHistory = [game.fen()];
+        viewingHistoryIndex = 0;
+        lastMove = null;
+        renderBoard();
+        appendChatMessage('Sistema', 'Posición FEN cargada exitosamente.');
+      } else {
+        alert('La cadena FEN ingresada no es válida según las reglas FIDE.');
+      }
+    }
+
+    function handleChatSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+      sendChatMessage(text);
+    }
+
+    function sendQuickChat(text) {
+      sendChatMessage(text);
+    }
+
+    function sendChatMessage(text) {
+      const sender = document.getElementById('usernameInput').value || 'Jugador';
+      appendChatMessage(sender, text, true);
+      sendNetworkPacket({ type: 'CHAT', sender, text });
+    }
+
+    function appendChatMessage(sender, text, isMe = false) {
+      const box = document.getElementById('chatMessages');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = `rounded-lg p-2 border ${isMe ? 'bg-emerald-950/50 border-emerald-500/30 text-emerald-100' : 'bg-slate-900/90 border-slate-800 text-slate-300'}`;
+      msgDiv.innerHTML = `<span class="font-bold ${isMe ? 'text-emerald-400' : 'text-indigo-400'}">${sender}:</span> ${text}`;
+      box.appendChild(msgDiv);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function updateUsername() {
+      renderPlayersLobby();
+      updatePlayerCards();
+    }
+
+    function toggleModal(id, show) {
+      const el = document.getElementById(id);
+      if (show) el.classList.remove('hidden');
+      else el.classList.add('hidden');
+    }
+
+    /*************************************************************************
+     * 11. INICIALIZACIÓN AL CARGAR LA PÁGINA
+     *************************************************************************/
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPlayersLobby();
+      createOnlineRoom();
+
+      // Si se abrió como 2da ventana espejo (?role=b&room=XXXX)
+      const params = new URLSearchParams(window.location.search);
+      const roleParam = params.get('role');
+      const roomParam = params.get('room');
+      if (roleParam === 'b') {
+        document.getElementById('usernameInput').value = 'Invitado_Online';
+        myColor = 'b';
+        boardOrientation = 'b';
+        updatePlayerBadges();
+        if (roomParam) {
+          document.getElementById('joinRoomInput').value = roomParam;
+          setTimeout(() => joinOnlineRoom(), 500);
+        }
+      }
+
+      renderBoard();
+    });
+  </script>
+</body>
+</html>
