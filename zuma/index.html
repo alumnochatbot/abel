@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Zuma Deluxe - Classic Arcade</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: radial-gradient(circle at center, #1a1005 0%, #080401 100%);
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+    .font-arcade {
+      font-family: 'Orbitron', monospace;
+    }
+    .gold-glow {
+      text-shadow: 0 0 12px rgba(245, 158, 11, 0.8), 0 0 24px rgba(217, 119, 6, 0.4);
+    }
+    .emerald-glow {
+      text-shadow: 0 0 12px rgba(16, 185, 129, 0.8), 0 0 24px rgba(5, 150, 105, 0.4);
+    }
+    .aztec-card {
+      background: linear-gradient(135deg, rgba(30, 20, 10, 0.95), rgba(15, 10, 5, 0.98));
+      border: 2px solid #b45309;
+      box-shadow: 0 0 25px rgba(180, 83, 9, 0.3), inset 0 0 15px rgba(245, 158, 11, 0.1);
+    }
+    .aztec-btn {
+      position: relative;
+      background: linear-gradient(180deg, #d97706 0%, #78350f 100%);
+      border: 1px solid #f59e0b;
+      box-shadow: 0 4px 0 0 #451a03, 0 0 10px rgba(245, 158, 11, 0.3);
+      transition: transform 0.05s ease, filter 0.15s ease;
+    }
+    .aztec-btn:hover {
+      filter: brightness(1.15);
+    }
+    .aztec-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 0 #451a03;
+    }
+    #gameCanvas {
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(217, 119, 6, 0.2);
+      border: 3px solid #78350f;
+      background-color: #0f0a04;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-between p-2 sm:p-4 select-none">
+
+  <!-- TOP BAR & NAVIGATION -->
+  <div class="w-full max-w-4xl flex items-center justify-between mb-2 px-2">
+    <a href="../index.html" class="inline-flex items-center gap-2 text-xs font-bold text-amber-200 hover:text-white bg-amber-950/80 hover:bg-amber-900/80 px-3.5 py-1.5 rounded-xl border border-amber-700/60 transition shadow-md">
+      <i class="fa-solid fa-arrow-left"></i> Volver al Portafolio
+    </a>
+    <div class="flex items-center gap-2 text-xs font-mono text-amber-300/80">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+      <span class="font-arcade">ZUMA DELUXE EDITION</span>
+    </div>
+  </div>
+
+  <!-- HUD BAR -->
+  <header class="w-full max-w-4xl aztec-card rounded-2xl p-2.5 sm:p-3 mb-2 flex items-center justify-between gap-2 shadow-xl z-10">
+    <!-- Score & Level -->
+    <div class="flex items-center gap-3 sm:gap-6">
+      <div class="flex flex-col">
+        <span class="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider">SCORE</span>
+        <span id="hud-score" class="font-arcade text-lg sm:text-2xl font-black text-amber-300 gold-glow tabular-nums">000000</span>
+      </div>
+      <div class="h-8 w-px bg-amber-800/60"></div>
+      <div class="flex flex-col">
+        <span class="text-[10px] text-amber-400/80 uppercase font-bold tracking-wider">STAGE</span>
+        <span id="hud-stage" class="font-arcade text-lg sm:text-2xl font-black text-emerald-400 emerald-glow">1</span>
+      </div>
+    </div>
+
+    <!-- Progress Bar & Lives -->
+    <div class="flex-1 max-w-xs px-2 hidden sm:flex flex-col gap-1">
+      <div class="flex justify-between items-center text-[10px] font-bold text-amber-300">
+        <span>PROGRESO NIVEL</span>
+        <span id="hud-progress-text">0%</span>
+      </div>
+      <div class="w-full h-2.5 bg-black/60 rounded-full border border-amber-900 overflow-hidden">
+        <div id="hud-progress-bar" class="h-full bg-gradient-to-r from-amber-600 via-yellow-400 to-emerald-400 w-0 transition-all duration-300"></div>
+      </div>
+    </div>
+
+    <!-- Lives & Controls -->
+    <div class="flex items-center gap-2 sm:gap-4">
+      <div class="flex items-center gap-1 bg-amber-950/60 px-2.5 py-1 rounded-xl border border-amber-800/50">
+        <span class="text-xs text-amber-400 font-bold mr-1">🐸</span>
+        <span id="hud-lives" class="font-arcade text-sm sm:text-lg font-bold text-amber-200">x3</span>
+      </div>
+
+      <button id="btn-swap" class="px-2.5 py-1.5 bg-amber-800/80 hover:bg-amber-700/80 rounded-xl border border-amber-600 text-amber-100 text-xs font-bold transition flex items-center gap-1 shadow" title="Cambiar Bola (Espacio / Clic Der)">
+        <i class="fa-solid fa-rotate text-xs"></i> <span class="hidden sm:inline">SWAP</span>
+      </button>
+
+      <button id="btn-sound" class="w-8 h-8 rounded-xl bg-amber-900/60 hover:bg-amber-800/80 text-amber-200 flex items-center justify-center border border-amber-700/60 transition" title="Sonido">
+        <i id="sound-icon" class="fa-solid fa-volume-high text-xs"></i>
+      </button>
+
+      <button id="btn-pause" class="w-8 h-8 rounded-xl bg-amber-900/60 hover:bg-amber-800/80 text-amber-200 flex items-center justify-center border border-amber-700/60 transition" title="Pausar (P)">
+        <i id="pause-icon" class="fa-solid fa-pause text-xs"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- GAME CANVAS CONTAINER -->
+  <main class="relative w-full max-w-4xl flex items-center justify-center my-auto">
+    <canvas id="gameCanvas" width="800" height="600" class="w-full h-auto aspect-[4/3] rounded-2xl block"></canvas>
+
+    <!-- OVERLAY SCREEN (START / PAUSE / STAGE CLEAR / GAME OVER) -->
+    <div id="overlay-screen" class="absolute inset-0 bg-black/85 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center p-6 text-center z-20">
+      <!-- Title Header -->
+      <div class="mb-4">
+        <div class="text-4xl sm:text-6xl mb-2 animate-bounce">🐸</div>
+        <h1 id="overlay-title" class="font-arcade text-3xl sm:text-5xl font-black text-amber-400 gold-glow tracking-widest uppercase">
+          ZUMA DELUXE
+        </h1>
+        <p id="overlay-subtitle" class="text-xs sm:text-sm text-amber-200/80 mt-1 font-semibold">
+          ¡Apunta, dispara esferas y destruye la cadena antes de que alcance la calavera!
+        </p>
+      </div>
+
+      <!-- Stats Summary (hidden in menu) -->
+      <div id="overlay-stats" class="hidden aztec-card px-6 py-3 rounded-xl mb-6 font-mono text-sm space-y-1">
+        <div>Puntuación Final: <span id="stat-final-score" class="text-amber-300 font-bold">0</span></div>
+        <div>Nivel Alcanzado: <span id="stat-final-stage" class="text-emerald-400 font-bold">1</span></div>
+        <div>Mayor Combo: <span id="stat-max-combo" class="text-yellow-400 font-bold">x1</span></div>
+      </div>
+
+      <!-- Controls Guide -->
+      <div id="overlay-guide" class="bg-amber-950/40 border border-amber-800/60 p-3.5 rounded-xl max-w-sm mb-6 text-left text-xs text-amber-200/90 space-y-1.5">
+        <div class="font-bold text-amber-400 uppercase text-[11px] mb-1 flex items-center gap-1.5">
+          <i class="fa-solid fa-gamepad"></i> Instrucciones de Juego:
+        </div>
+        <div class="flex items-center gap-2"><span class="text-amber-400">🎯 Mouse / Touch:</span> Apunta la rana Azteca</div>
+        <div class="flex items-center gap-2"><span class="text-amber-400">💥 Clic / Tap:</span> Dispara la bola actual</div>
+        <div class="flex items-center gap-2"><span class="text-amber-400">🔄 Clic Der / Espacio / Botón:</span> Intercambia bola actual con la siguiente</div>
+        <div class="flex items-center gap-2"><span class="text-amber-400">💣 Bolas Especiales:</span> Bombas, Ralentizadores y Reversa</div>
+      </div>
+
+      <!-- Action Button -->
+      <button id="btn-start" class="aztec-btn px-8 py-3.5 rounded-xl font-arcade text-sm sm:text-base font-bold text-amber-100 uppercase tracking-wider">
+        JUGAR AHORA
+      </button>
+    </div>
+  </main>
+
+  <!-- FOOTER INSTRUCTIONS -->
+  <footer class="w-full max-w-4xl mt-2 px-3 py-2 bg-amber-950/40 border border-amber-900/40 rounded-xl text-[11px] text-amber-300/70 flex flex-wrap items-center justify-between gap-2">
+    <div>
+      <span class="font-bold text-amber-400">Tip:</span> Junta 3 o más bolas del mismo color para destruirlas. ¡Si dejas huecos con colores iguales en los bordes, la cadena retrocederá creando COMBOS!
+    </div>
+    <div class="font-mono text-[10px] text-amber-400/60">
+      Fernando Rojas &copy; 2024
+    </div>
+  </footer>
+
+  <!-- GAME ENGINE LOGIC -->
+  <script>
+    /* ==========================================================================
+       1. WEB AUDIO SYNTHESIZER (Procedural sound generator with zero assets)
+       ========================================================================== */
+    class ZumaAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type, duration, startVol = 0.25, endVol = 0.001, pitchEnd = null) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        try {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          if (pitchEnd) {
+            osc.frequency.exponentialRampToValueAtTime(pitchEnd, this.ctx.currentTime + duration);
+          }
+          gain.gain.setValueAtTime(startVol, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(endVol, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      playShot() {
+        this.playTone(380, 'sine', 0.1, 0.3, 0.01, 140);
+      }
+
+      playInsert() {
+        this.playTone(450, 'triangle', 0.06, 0.2, 0.01, 600);
+      }
+
+      playSwap() {
+        this.playTone(520, 'sine', 0.08, 0.2, 0.01, 780);
+      }
+
+      playPop(comboMultiplier = 1) {
+        const baseFreq = 400 + Math.min(comboMultiplier * 120, 800);
+        this.playTone(baseFreq, 'sine', 0.12, 0.35, 0.01, baseFreq * 1.5);
+      }
+
+      playBomb() {
+        this.playTone(150, 'sawtooth', 0.35, 0.4, 0.01, 40);
+      }
+
+      playPowerup() {
+        [440, 554, 659, 880].forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 'triangle', 0.1, 0.2), idx * 60);
+        });
+      }
+
+      playSkullWarning() {
+        this.playTone(220, 'sawtooth', 0.18, 0.3, 0.01, 110);
+      }
+
+      playLevelClear() {
+        [523, 659, 784, 1046, 784, 1046].forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 'triangle', 0.16, 0.3), idx * 100);
+        });
+      }
+
+      playGameOver() {
+        [392, 349, 311, 261].forEach((f, idx) => {
+          setTimeout(() => this.playTone(f, 'sawtooth', 0.25, 0.3), idx * 140);
+        });
+      }
+    }
+
+    const sound = new ZumaAudio();
+
+    /* ==========================================================================
+       2. GAME CONSTANTS & TRACK WAYPOINTS DEFINITIONS
+       ========================================================================== */
+    const BALL_RADIUS = 13; // Diameter 26px
+    const BALL_DIAMETER = BALL_RADIUS * 2;
+    const SHOT_SPEED = 18;
+
+    const BALL_COLORS = [
+      { id: 'red', name: 'Rojo', hex: '#ef4444', glow: '#f87171', inner: '#fca5a5' },
+      { id: 'blue', name: 'Azul', hex: '#3b82f6', glow: '#60a5fa', inner: '#93c5fd' },
+      { id: 'green', name: 'Verde', hex: '#10b981', glow: '#34d399', inner: '#6ee7b7' },
+      { id: 'yellow', name: 'Amarillo', hex: '#f59e0b', glow: '#fbbf24', inner: '#fde047' },
+      { id: 'purple', name: 'Púrpura', hex: '#a855f7', glow: '#c084fc', inner: '#e9d5ff' }
+    ];
+
+    const PWR_BOMB = 'bomb';
+    const PWR_SLOW = 'slow';
+    const PWR_REVERSE = 'reverse';
+
+    // Levels Tracks Waypoints definitions (800x600 logical space)
+    const LEVEL_TRACKS = [
+      // Level 1: Outer to Inner Spiral Curve
+      {
+        frogPos: { x: 400, y: 300 },
+        waypointFunc: (t) => {
+          // Parametric Archimedean Spiral towards skull
+          // t ranges from 0 to 1
+          const startRadius = 340;
+          const endRadius = 70;
+          const turns = 2.2;
+          const angle = t * Math.PI * 2 * turns + Math.PI * 0.2;
+          const radius = startRadius - t * (startRadius - endRadius);
+          return {
+            x: 400 + Math.cos(angle) * radius,
+            y: 300 + Math.sin(angle) * radius
+          };
+        },
+        targetBalls: 35,
+        speed: 0.85
+      },
+      // Level 2: S-Shape Loop Around Central Frog
+      {
+        frogPos: { x: 400, y: 300 },
+        waypointFunc: (t) => {
+          // Double S-Curve loop
+          const angle = t * Math.PI * 3.2 - Math.PI * 0.5;
+          const r = 260 + Math.sin(t * Math.PI * 4) * 80;
+          return {
+            x: 400 + Math.cos(angle) * (r * (1 - t * 0.6)),
+            y: 300 + Math.sin(angle) * (r * (1 - t * 0.6))
+          };
+        },
+        targetBalls: 45,
+        speed: 1.0
+      },
+      // Level 3: Aztec Infinity / Figure Eight Track
+      {
+        frogPos: { x: 400, y: 300 },
+        waypointFunc: (t) => {
+          const scale = 320 * (1 - t * 0.65);
+          const angle = t * Math.PI * 4;
+          const denom = 1 + Math.sin(angle) * Math.sin(angle);
+          return {
+            x: 400 + (scale * Math.cos(angle)) / denom,
+            y: 300 + (scale * Math.sin(angle) * Math.cos(angle)) / denom
+          };
+        },
+        targetBalls: 55,
+        speed: 1.15
+      }
+    ];
+
+    /* ==========================================================================
+       3. GAME ENGINE & STATE MANAGEMENT
+       ========================================================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const STATE_MENU = 'MENU';
+    const STATE_PLAYING = 'PLAYING';
+    const STATE_PAUSED = 'PAUSED';
+    const STATE_STAGE_CLEAR = 'STAGE_CLEAR';
+    const STATE_GAME_OVER = 'GAME_OVER';
+
+    let gameState = STATE_MENU;
+    let currentStageIndex = 0;
+    let score = 0;
+    let lives = 3;
+    let maxComboThisGame = 1;
+
+    // Track state
+    let trackPath = [];        // [{x, y, totalDist}]
+    let trackTotalLength = 0;
+
+    // Ball Chain & Spawn
+    let ballsChain = [];       // [{ colorObj, dist, powerup, animOffset }]
+    let ballsSpawnedCount = 0;
+    let targetStageBalls = 35;
+    let baseChainSpeed = 0.85;
+    let activeSlowTimer = 0;
+    let activeReverseDistance = 0;
+
+    // Frog Cannon
+    let frog = {
+      x: 400,
+      y: 300,
+      angle: 0,
+      currentBall: null,
+      nextBall: null
+    };
+
+    // Shots & Particles
+    let activeShot = null;     // { x, y, vx, vy, colorObj }
+    let particles = [];        // [{ x, y, vx, vy, color, life, maxLife, size }]
+    let floatScores = [];      // [{ x, y, text, life }]
+    let explosionAnims = [];   // [{ x, y, radius, maxRadius, life }]
+
+    // Aim mouse position
+    let mousePos = { x: 400, y: 100 };
+
+    /* ==========================================================================
+       4. PATH SAMPLING & WAYPOINTS COMPUTATION
+       ========================================================================== */
+    function buildTrackPath(stageIdx) {
+      const stageConfig = LEVEL_TRACKS[stageIdx % LEVEL_TRACKS.length];
+      frog.x = stageConfig.frogPos.x;
+      frog.y = stageConfig.frogPos.y;
+      targetStageBalls = stageConfig.targetBalls;
+      baseChainSpeed = stageConfig.speed;
+
+      const samples = 1200;
+      trackPath = [];
+      let accumulatedDist = 0;
+      let prevPoint = null;
+
+      for (let i = 0; i <= samples; i++) {
+        const t = i / samples;
+        const pt = stageConfig.waypointFunc(t);
+
+        if (prevPoint) {
+          const stepDist = Math.hypot(pt.x - prevPoint.x, pt.y - prevPoint.y);
+          accumulatedDist += stepDist;
+        }
+
+        trackPath.push({
+          x: pt.x,
+          y: pt.y,
+          dist: accumulatedDist
+        });
+
+        prevPoint = pt;
+      }
+
+      trackTotalLength = accumulatedDist;
+    }
+
+    function getTrackPointAtDistance(d) {
+      if (d <= 0) return { x: trackPath[0].x, y: trackPath[0].y, angle: 0 };
+      if (d >= trackTotalLength) {
+        const last = trackPath[trackPath.length - 1];
+        return { x: last.x, y: last.y, angle: 0 };
+      }
+
+      // Binary search for closest segment
+      let low = 0;
+      let high = trackPath.length - 1;
+      while (low <= high) {
+        const mid = (low + high) >> 1;
+        if (trackPath[mid].dist < d) low = mid + 1;
+        else high = mid - 1;
+      }
+
+      const idx = Math.max(0, Math.min(trackPath.length - 1, low));
+      const p1 = trackPath[Math.max(0, idx - 1)];
+      const p2 = trackPath[idx];
+
+      if (!p1 || !p2 || p1.dist === p2.dist) return { x: p2.x, y: p2.y, angle: 0 };
+
+      const factor = (d - p1.dist) / (p2.dist - p1.dist);
+      const interpolatedX = p1.x + (p2.x - p1.x) * factor;
+      const interpolatedY = p1.y + (p2.y - p1.y) * factor;
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const angle = Math.atan2(dy, dx);
+
+      return { x: interpolatedX, y: interpolatedY, angle: angle };
+    }
+
+    /* ==========================================================================
+       5. GAME SETUP & RESET
+       ========================================================================== */
+    function initStage(stageIdx) {
+      buildTrackPath(stageIdx);
+
+      ballsChain = [];
+      ballsSpawnedCount = 0;
+      activeSlowTimer = 0;
+      activeReverseDistance = 0;
+      activeShot = null;
+      particles = [];
+      floatScores = [];
+      explosionAnims = [];
+
+      // Initialize Frog ammo
+      frog.currentBall = getRandomAvailableColor();
+      frog.nextBall = getRandomAvailableColor();
+
+      updateHUD();
+    }
+
+    function getRandomAvailableColor() {
+      // Get colors currently existing in chain if chain is not empty, to avoid unmatchable balls
+      if (ballsChain.length > 5) {
+        const existingColorIds = new Set(ballsChain.map(b => b.colorObj.id));
+        const activeColors = BALL_COLORS.filter(c => existingColorIds.has(c.id));
+        if (activeColors.length > 0) {
+          return activeColors[Math.floor(Math.random() * activeColors.length)];
+        }
+      }
+      return BALL_COLORS[Math.floor(Math.random() * BALL_COLORS.length)];
+    }
+
+    /* ==========================================================================
+       6. CHAIN MOVEMENT & SPANNING LOGIC
+       ========================================================================== */
+    function updateChain() {
+      // 1. Spawning new balls at start of track (dist = 0)
+      if (ballsSpawnedCount < targetStageBalls) {
+        if (ballsChain.length === 0) {
+          spawnNewChainBall(0);
+        } else {
+          const firstBall = ballsChain[0];
+          if (firstBall.dist >= BALL_DIAMETER) {
+            spawnNewChainBall(firstBall.dist - BALL_DIAMETER);
+          }
+        }
+      }
+
+      if (ballsChain.length === 0) return;
+
+      // 2. Determine Speed (Slow power-up or Reverse power-up)
+      let effectiveSpeed = baseChainSpeed;
+      if (activeSlowTimer > 0) {
+        activeSlowTimer--;
+        effectiveSpeed *= 0.35;
+      }
+
+      let reversePush = 0;
+      if (activeReverseDistance > 0) {
+        reversePush = Math.min(3.5, activeReverseDistance);
+        activeReverseDistance -= reversePush;
+      }
+
+      // 3. Move leading ball forward
+      const leadIdx = ballsChain.length - 1;
+      ballsChain[leadIdx].dist += effectiveSpeed - reversePush;
+
+      // 4. Ensure balls maintain tight distance & handle Gap Closing / Magnetism
+      for (let i = ballsChain.length - 2; i >= 0; i--) {
+        const currentBall = ballsChain[i];
+        const nextAhead = ballsChain[i + 1];
+
+        const targetDist = nextAhead.dist - BALL_DIAMETER;
+
+        if (currentBall.dist < targetDist) {
+          // Check if colors match across the gap -> Attract/Pull Back!
+          if (currentBall.colorObj.id === nextAhead.colorObj.id) {
+            // Magnetic attraction backwards to close gap
+            currentBall.dist += Math.min(5.0, targetDist - currentBall.dist);
+          } else {
+            // Move normal speed
+            currentBall.dist += effectiveSpeed - reversePush;
+            if (currentBall.dist > targetDist) {
+              currentBall.dist = targetDist;
+            }
+          }
+        } else if (currentBall.dist > targetDist) {
+          // Overlap correction
+          currentBall.dist = targetDist;
+        }
+      }
+
+      // 5. Check if balls touching after gap closure trigger combo matches!
+      checkGapCollisionsAndCombos();
+
+      // 6. Check Skull Warning / Danger & Defeat Condition
+      const frontBall = ballsChain[ballsChain.length - 1];
+      if (frontBall) {
+        if (frontBall.dist >= trackTotalLength - 10) {
+          // Ball entered skull! Life Lost!
+          sound.playGameOver();
+          lives--;
+          updateHUD();
+          if (lives <= 0) {
+            showGameOverScreen();
+          } else {
+            initStage(currentStageIndex);
+          }
+        } else if (frontBall.dist >= trackTotalLength - 120 && Math.random() < 0.05) {
+          sound.playSkullWarning();
+        }
+      }
+    }
+
+    function spawnNewChainBall(initialDist) {
+      ballsSpawnedCount++;
+      const color = getRandomAvailableColor();
+
+      // ~10% chance for powerup ball
+      let pwr = null;
+      if (Math.random() < 0.12 && ballsSpawnedCount > 5) {
+        const pTypes = [PWR_BOMB, PWR_SLOW, PWR_REVERSE];
+        pwr = pTypes[Math.floor(Math.random() * pTypes.length)];
+      }
+
+      ballsChain.unshift({
+        colorObj: color,
+        dist: initialDist,
+        powerup: pwr,
+        animPulse: 0
+      });
+    }
+
+    /* ==========================================================================
+       7. SHOOTER & COLLISION INSERTION
+       ========================================================================== */
+    function updateShot() {
+      if (!activeShot) return;
+
+      activeShot.x += activeShot.vx;
+      activeShot.y += activeShot.vy;
+
+      // Check collision with screen boundaries
+      if (activeShot.x < -20 || activeShot.x > 820 || activeShot.y < -20 || activeShot.y > 620) {
+        activeShot = null;
+        return;
+      }
+
+      // Check collision with balls in chain
+      for (let i = 0; i < ballsChain.length; i++) {
+        const b = ballsChain[i];
+        const pt = getTrackPointAtDistance(b.dist);
+        const distToShot = Math.hypot(activeShot.x - pt.x, activeShot.y - pt.y);
+
+        if (distToShot <= BALL_DIAMETER) {
+          // HIT! Insert shot ball into chain at closest spot
+          insertShotIntoChain(i, activeShot);
+          activeShot = null;
+          return;
+        }
+      }
+    }
+
+    function insertShotIntoChain(hitIndex, shot) {
+      sound.playInsert();
+
+      const hitBall = ballsChain[hitIndex];
+      const hitPt = getTrackPointAtDistance(hitBall.dist);
+
+      // Determine whether shot hit front or back half of target ball
+      // Dot product of shot vector with track direction
+      const nextPt = getTrackPointAtDistance(hitBall.dist + 1);
+      const trackDir = { x: nextPt.x - hitPt.x, y: nextPt.y - hitPt.y };
+      const shotDir = { x: shot.vx, y: shot.vy };
+      const dot = shotDir.x * trackDir.x + shotDir.y * trackDir.y;
+
+      let insertIdx = hitIndex;
+      let newDist = hitBall.dist;
+
+      if (dot >= 0) {
+        // Insert ahead
+        insertIdx = hitIndex + 1;
+        newDist = hitBall.dist + BALL_DIAMETER * 0.8;
+      } else {
+        // Insert behind
+        insertIdx = hitIndex;
+        newDist = hitBall.dist - BALL_DIAMETER * 0.8;
+      }
+
+      // Push adjacent balls back/forward to fit new ball
+      for (let k = insertIdx; k < ballsChain.length; k++) {
+        ballsChain[k].dist += BALL_DIAMETER;
+      }
+
+      const newBall = {
+        colorObj: shot.colorObj,
+        dist: newDist,
+        powerup: null,
+        animPulse: 1.0
+      };
+
+      ballsChain.splice(insertIdx, 0, newBall);
+
+      // Reload Frog ammo
+      frog.currentBall = frog.nextBall;
+      frog.nextBall = getRandomAvailableColor();
+
+      // Check Match-3+ starting from inserted index
+      checkAndExecuteMatch(insertIdx, 1);
+    }
+
+    /* ==========================================================================
+       8. MATCH-3+ POPPING & COMBO CHAIN REACTION
+       ========================================================================== */
+    function checkAndExecuteMatch(startIndex, comboMultiplier = 1) {
+      if (startIndex < 0 || startIndex >= ballsChain.length) return;
+
+      const targetColorId = ballsChain[startIndex].colorObj.id;
+
+      // Find contiguous matching range [leftIdx, rightIdx]
+      let leftIdx = startIndex;
+      while (leftIdx > 0 && ballsChain[leftIdx - 1].colorObj.id === targetColorId) {
+        leftIdx--;
+      }
+
+      let rightIdx = startIndex;
+      while (rightIdx < ballsChain.length - 1 && ballsChain[rightIdx + 1].colorObj.id === targetColorId) {
+        rightIdx++;
+      }
+
+      const matchCount = (rightIdx - leftIdx + 1);
+
+      if (matchCount >= 3) {
+        // POP MATCH!
+        if (comboMultiplier > maxComboThisGame) {
+          maxComboThisGame = comboMultiplier;
+        }
+
+        sound.playPop(comboMultiplier);
+
+        // Check if any popped ball has a Powerup or Bomb
+        let hasBomb = false;
+        let hasSlow = false;
+        let hasReverse = false;
+
+        const poppedBalls = ballsChain.slice(leftIdx, rightIdx + 1);
+
+        poppedBalls.forEach(b => {
+          if (b.powerup === PWR_BOMB) hasBomb = true;
+          if (b.powerup === PWR_SLOW) hasSlow = true;
+          if (b.powerup === PWR_REVERSE) hasReverse = true;
+
+          const pt = getTrackPointAtDistance(b.dist);
+          spawnParticles(pt.x, pt.y, b.colorObj.hex, 10);
+        });
+
+        // Award score
+        const pointsGained = matchCount * 100 * comboMultiplier;
+        score += pointsGained;
+
+        const centerPt = getTrackPointAtDistance(ballsChain[leftIdx].dist);
+        createFloatScore(centerPt.x, centerPt.y, comboMultiplier > 1 ? `+${pointsGained} COMBO x${comboMultiplier}!` : `+${pointsGained}`);
+
+        // Handle Powerups
+        if (hasSlow) {
+          activeSlowTimer = 300; // ~5 sec slow
+          sound.playPowerup();
+        }
+        if (hasReverse) {
+          activeReverseDistance = 140; // Push back ~140px
+          sound.playPowerup();
+        }
+        if (hasBomb) {
+          triggerBombExplosion(centerPt.x, centerPt.y);
+        }
+
+        // Remove matched balls from array
+        ballsChain.splice(leftIdx, matchCount);
+        updateHUD();
+
+        // Check level clear condition: All balls cleared & spawn target reached!
+        if (ballsChain.length === 0 && ballsSpawnedCount >= targetStageBalls) {
+          triggerStageClear();
+          return;
+        }
+
+        // Check if remaining adjacent balls now match (Pull-back combo!)
+        // After splice, leftIdx points to the ball that was just behind the deleted group
+        if (leftIdx > 0 && leftIdx < ballsChain.length) {
+          if (ballsChain[leftIdx - 1].colorObj.id === ballsChain[leftIdx].colorObj.id) {
+            // Trigger combo check on next frame after attraction closes gap
+            setTimeout(() => {
+              checkAndExecuteMatch(leftIdx, comboMultiplier + 1);
+            }, 180);
+          }
+        }
+      }
+    }
+
+    function checkGapCollisionsAndCombos() {
+      // Check adjacent balls that touched after closing a gap
+      for (let i = 0; i < ballsChain.length - 1; i++) {
+        const b1 = ballsChain[i];
+        const b2 = ballsChain[i + 1];
+        if (Math.abs(b2.dist - b1.dist - BALL_DIAMETER) < 1.0) {
+          if (b1.colorObj.id === b2.colorObj.id) {
+            // Check if this forms a 3+ match
+            checkAndExecuteMatch(i, 2);
+            break;
+          }
+        }
+      }
+    }
+
+    function triggerBombExplosion(x, y) {
+      sound.playBomb();
+      explosionAnims.push({ x, y, radius: 10, maxRadius: 75, life: 1.0 });
+
+      // Destroy any balls within 75px
+      for (let i = ballsChain.length - 1; i >= 0; i--) {
+        const pt = getTrackPointAtDistance(ballsChain[i].dist);
+        if (Math.hypot(pt.x - x, pt.y - y) <= 75) {
+          spawnParticles(pt.x, pt.y, ballsChain[i].colorObj.hex, 8);
+          ballsChain.splice(i, 1);
+          score += 150;
+        }
+      }
+      updateHUD();
+    }
+
+    /* ==========================================================================
+       9. VISUAL PARTICLES & SCORE POPUPS
+       ========================================================================== */
+    function spawnParticles(x, y, colorHex, count = 8) {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 5 + 1.5;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          color: colorHex,
+          size: Math.random() * 4 + 2,
+          life: 1.0,
+          decay: Math.random() * 0.04 + 0.03
+        });
+      }
+    }
+
+    function createFloatScore(x, y, text) {
+      floatScores.push({ x, y, text, life: 1.0 });
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      for (let i = floatScores.length - 1; i >= 0; i--) {
+        const fs = floatScores[i];
+        fs.y -= 0.8;
+        fs.life -= 0.025;
+        if (fs.life <= 0) floatScores.splice(i, 1);
+      }
+
+      for (let i = explosionAnims.length - 1; i >= 0; i--) {
+        const ex = explosionAnims[i];
+        ex.radius += 4;
+        ex.life -= 0.05;
+        if (ex.life <= 0) explosionAnims.splice(i, 1);
+      }
+    }
+
+    /* ==========================================================================
+       10. RENDERING (Canvas Direct Graphics)
+       ========================================================================== */
+    function render() {
+      // 1. Background Aztec Stone Floor
+      ctx.fillStyle = '#0f0a04';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle Aztec grid pattern
+      ctx.strokeStyle = 'rgba(180, 83, 9, 0.08)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // 2. Render Track Groove Path
+      ctx.strokeStyle = '#451a03';
+      ctx.lineWidth = 32;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      trackPath.forEach((pt, idx) => {
+        if (idx === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+
+      // Inner track groove line
+      ctx.strokeStyle = '#1c0a00';
+      ctx.lineWidth = 24;
+      ctx.stroke();
+
+      // 3. Render Skull / Pit at End of Track
+      const endPt = trackPath[trackPath.length - 1];
+      drawSkullPit(endPt.x, endPt.y);
+
+      // 4. Render Ball Chain
+      ballsChain.forEach(b => {
+        const pt = getTrackPointAtDistance(b.dist);
+        drawBallSphere(pt.x, pt.y, b.colorObj, b.powerup);
+      });
+
+      // 5. Render Frog Cannon in Center
+      drawFrogCannon();
+
+      // 6. Render Active Shot Projectile
+      if (activeShot) {
+        drawBallSphere(activeShot.x, activeShot.y, activeShot.colorObj, null);
+      }
+
+      // 7. Render Particles & Explosions
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      explosionAnims.forEach(ex => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, ex.life);
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(ex.x, ex.y, ex.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      floatScores.forEach(fs => {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, fs.life);
+        ctx.fillStyle = '#fef08a';
+        ctx.shadowColor = '#d97706';
+        ctx.shadowBlur = 8;
+        ctx.font = 'bold 13px Orbitron, monospace';
+        ctx.fillText(fs.text, fs.x - 15, fs.y);
+        ctx.restore();
+      });
+    }
+
+    function drawBallSphere(x, y, colorObj, powerup) {
+      ctx.save();
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.arc(x + 2, y + 3, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Main Outer Sphere
+      ctx.fillStyle = colorObj.hex;
+      ctx.shadowColor = colorObj.glow;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(x, y, BALL_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner Specular Glow / Bevel
+      ctx.fillStyle = colorObj.inner;
+      ctx.beginPath();
+      ctx.arc(x - 3, y - 4, BALL_RADIUS * 0.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Crisp White Highlight Crescent
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x - 4, y - 5, BALL_RADIUS * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Power-up Symbol Overlay
+      if (powerup) {
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (powerup === PWR_BOMB) ctx.fillText('💣', x, y + 1);
+        if (powerup === PWR_SLOW) ctx.fillText('⏸', x, y + 1);
+        if (powerup === PWR_REVERSE) ctx.fillText('⏪', x, y + 1);
+      }
+
+      ctx.restore();
+    }
+
+    function drawFrogCannon() {
+      ctx.save();
+      ctx.translate(frog.x, frog.y);
+
+      // Rotate towards mouse target
+      const dx = mousePos.x - frog.x;
+      const dy = mousePos.y - frog.y;
+      frog.angle = Math.atan2(dy, dx);
+      ctx.rotate(frog.angle);
+
+      // Base Golden Aztec Pedestal
+      ctx.fillStyle = '#78350f';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(0, 0, 36, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Frog Body (Emerald Green Aztec Frog)
+      ctx.fillStyle = '#059669';
+      ctx.beginPath();
+      ctx.arc(0, 0, 28, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Frog Eyes
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(12, -18, 9, 0, Math.PI * 2);
+      ctx.arc(12, 18, 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fbbf24'; // Golden Eye Pupils
+      ctx.beginPath();
+      ctx.arc(14, -18, 4, 0, Math.PI * 2);
+      ctx.arc(14, 18, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Next Ball in Back Slot
+      if (frog.nextBall) {
+        drawBallSphere(-14, 0, frog.nextBall, null);
+      }
+
+      // Current Ball in Mouth
+      if (frog.currentBall) {
+        drawBallSphere(16, 0, frog.currentBall, null);
+      }
+
+      ctx.restore();
+    }
+
+    function drawSkullPit(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Golden Aztec Ring
+      ctx.fillStyle = '#451a03';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 26, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      // Dark Hole
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Skull Face Icon 💀
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('💀', 0, 0);
+
+      ctx.restore();
+    }
+
+    /* ==========================================================================
+       11. INPUT CONTROLS & EVENT LISTENERS
+       ========================================================================== */
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      let clientX = e.clientX;
+      let clientY = e.clientY;
+
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      }
+
+      return {
+        x: (clientX - rect.left) * scaleX,
+        y: (clientY - rect.top) * scaleY
+      };
+    }
+
+    function shootBall() {
+      if (gameState !== STATE_PLAYING || activeShot || !frog.currentBall) return;
+
+      sound.playShot();
+
+      const dx = mousePos.x - frog.x;
+      const dy = mousePos.y - frog.y;
+      const len = Math.hypot(dx, dy);
+
+      if (len === 0) return;
+
+      const vx = (dx / len) * SHOT_SPEED;
+      const vy = (dy / len) * SHOT_SPEED;
+
+      activeShot = {
+        x: frog.x + (dx / len) * 28,
+        y: frog.y + (dy / len) * 28,
+        vx: vx,
+        vy: vy,
+        colorObj: frog.currentBall
+      };
+    }
+
+    function swapBalls() {
+      if (gameState !== STATE_PLAYING) return;
+      sound.playSwap();
+      const temp = frog.currentBall;
+      frog.currentBall = frog.nextBall;
+      frog.nextBall = temp;
+    }
+
+    canvas.addEventListener('mousemove', (e) => {
+      mousePos = getCanvasCoords(e);
+    });
+
+    canvas.addEventListener('click', (e) => {
+      e.preventDefault();
+      mousePos = getCanvasCoords(e);
+      shootBall();
+    });
+
+    canvas.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      swapBalls();
+    });
+
+    // Touch support for Mobile
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mousePos = getCanvasCoords(e);
+      shootBall();
+    }, { passive: false });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        swapBalls();
+      }
+      if (e.code === 'KeyP') {
+        togglePause();
+      }
+    });
+
+    /* ==========================================================================
+       12. GAME LOOP & OVERLAYS
+       ========================================================================== */
+    function gameLoop() {
+      if (gameState === STATE_PLAYING) {
+        updateChain();
+        updateShot();
+        updateParticles();
+      }
+
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function triggerStageClear() {
+      gameState = STATE_STAGE_CLEAR;
+      sound.playLevelClear();
+
+      score += (currentStageIndex + 1) * 1000;
+      updateHUD();
+
+      const overlay = document.getElementById('overlay-screen');
+      document.getElementById('overlay-title').innerText = `STAGE ${currentStageIndex + 1} CLEAR!`;
+      document.getElementById('overlay-title').className = 'font-arcade text-3xl sm:text-5xl font-black text-emerald-400 emerald-glow tracking-widest uppercase';
+      document.getElementById('overlay-subtitle').innerText = '¡Gran trabajo! Has despejado toda la cadena Azteca.';
+
+      document.getElementById('stat-final-score').innerText = score;
+      document.getElementById('stat-final-stage').innerText = currentStageIndex + 1;
+      document.getElementById('stat-max-combo').innerText = `x${maxComboThisGame}`;
+      document.getElementById('overlay-stats').classList.remove('hidden');
+
+      document.getElementById('btn-start').innerText = 'SIGUIENTE NIVEL';
+      overlay.classList.remove('hidden');
+    }
+
+    function showGameOverScreen() {
+      gameState = STATE_GAME_OVER;
+      sound.playGameOver();
+
+      const overlay = document.getElementById('overlay-screen');
+      document.getElementById('overlay-title').innerText = 'GAME OVER';
+      document.getElementById('overlay-title').className = 'font-arcade text-3xl sm:text-5xl font-black text-red-500 gold-glow tracking-widest uppercase';
+      document.getElementById('overlay-subtitle').innerText = 'La cadena alcanzó la calavera sagrada...';
+
+      document.getElementById('stat-final-score').innerText = score;
+      document.getElementById('stat-final-stage').innerText = currentStageIndex + 1;
+      document.getElementById('stat-max-combo').innerText = `x${maxComboThisGame}`;
+      document.getElementById('overlay-stats').classList.remove('hidden');
+
+      document.getElementById('btn-start').innerText = 'REINTENTAR';
+      overlay.classList.remove('hidden');
+    }
+
+    function startNewGame() {
+      sound.init();
+      score = 0;
+      lives = 3;
+      currentStageIndex = 0;
+      maxComboThisGame = 1;
+
+      initStage(currentStageIndex);
+      gameState = STATE_PLAYING;
+
+      document.getElementById('overlay-screen').classList.add('hidden');
+    }
+
+    function nextStage() {
+      currentStageIndex++;
+      initStage(currentStageIndex);
+      gameState = STATE_PLAYING;
+
+      document.getElementById('overlay-screen').classList.add('hidden');
+    }
+
+    function togglePause() {
+      if (gameState === STATE_PLAYING) {
+        gameState = STATE_PAUSED;
+        document.getElementById('pause-icon').className = 'fa-solid fa-play text-xs';
+
+        const overlay = document.getElementById('overlay-screen');
+        document.getElementById('overlay-title').innerText = 'PAUSA';
+        document.getElementById('overlay-title').className = 'font-arcade text-3xl sm:text-5xl font-black text-amber-400 gold-glow tracking-widest uppercase';
+        document.getElementById('overlay-subtitle').innerText = 'Juego en pausa';
+        document.getElementById('btn-start').innerText = 'CONTINUAR';
+        document.getElementById('overlay-stats').classList.add('hidden');
+        overlay.classList.remove('hidden');
+      } else if (gameState === STATE_PAUSED) {
+        gameState = STATE_PLAYING;
+        document.getElementById('pause-icon').className = 'fa-solid fa-pause text-xs';
+        document.getElementById('overlay-screen').classList.add('hidden');
+      }
+    }
+
+    function updateHUD() {
+      document.getElementById('hud-score').innerText = String(score).padStart(6, '0');
+      document.getElementById('hud-stage').innerText = String(currentStageIndex + 1);
+      document.getElementById('hud-lives').innerText = `x${lives}`;
+
+      const progressPct = Math.min(100, Math.floor((ballsSpawnedCount / targetStageBalls) * 100));
+      document.getElementById('hud-progress-text').innerText = `${progressPct}%`;
+      document.getElementById('hud-progress-bar').style.width = `${progressPct}%`;
+    }
+
+    // UI Listeners
+    document.getElementById('btn-start').addEventListener('click', () => {
+      sound.init();
+      if (gameState === STATE_MENU || gameState === STATE_GAME_OVER) {
+        startNewGame();
+      } else if (gameState === STATE_STAGE_CLEAR) {
+        nextStage();
+      } else if (gameState === STATE_PAUSED) {
+        togglePause();
+      }
+    });
+
+    document.getElementById('btn-swap').addEventListener('click', () => {
+      swapBalls();
+    });
+
+    document.getElementById('btn-pause').addEventListener('click', () => {
+      togglePause();
+    });
+
+    document.getElementById('btn-sound').addEventListener('click', () => {
+      sound.init();
+      sound.enabled = !sound.enabled;
+      document.getElementById('sound-icon').className = sound.enabled ? 'fa-solid fa-volume-high text-xs' : 'fa-solid fa-volume-xmark text-xs';
+    });
+
+    // Window Load Init
+    window.onload = function() {
+      initStage(0);
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
+</body>
+</html>
