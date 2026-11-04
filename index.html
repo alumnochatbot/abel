@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="es" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fernando Rojas | Portafolio Profesional</title>
+    <title>Hola soy abel Fernando Yupanqui rojas</title>
     <!-- Framework de Estilos: Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Iconos: Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        
+
         body {
             font-family: 'Inter', sans-serif;
         }
@@ -44,10 +45,12 @@
         }
     </style>
 </head>
+
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
 
     <!-- BARRA DE NAVEGACIÓN -->
-    <nav class="fixed w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+    <nav
+        class="fixed w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
             <span class="text-xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">FR</span>
             <div class="hidden md:flex space-x-8 text-sm font-medium items-center">
@@ -56,7 +59,8 @@
                 <a href="#proyectos" class="hover:text-indigo-600 transition">Proyectos</a>
                 <a href="#contacto" class="hover:text-indigo-600 transition">Contacto</a>
                 <!-- Botón de Ayuda -->
-                <button onclick="toggleHelpModal()" class="flex items-center gap-2 px-4 py-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-md">
+                <button onclick="toggleHelpModal()"
+                    class="flex items-center gap-2 px-4 py-1.5 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-md">
                     <i class="fas fa-question-circle"></i> Ayuda
                 </button>
             </div>
@@ -70,8 +74,10 @@
 
     <!-- VENTANA MODAL DE AYUDA -->
     <div id="help-modal" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm p-4">
-        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all">
-            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-600 text-white">
+        <div
+            class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform transition-all">
+            <div
+                class="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-600 text-white">
                 <h3 class="text-xl font-bold flex items-center gap-2">
                     <i class="fas fa-life-ring"></i> Guía del Sitio
                 </h3>
@@ -82,34 +88,43 @@
             <div class="p-8 max-h-[70vh] overflow-y-auto space-y-6">
                 <div>
                     <h4 class="font-bold text-indigo-600 mb-2 uppercase text-xs tracking-widest">¿Cómo navegar?</h4>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">Usa el menú superior para desplazarte. En la sección de proyectos, encontrarás botones interactivos para conocer más sobre mi trabajo con IA.</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Usa el menú superior para desplazarte. En la
+                        sección de proyectos, encontrarás botones interactivos para conocer más sobre mi trabajo con IA.
+                    </p>
                 </div>
                 <div>
                     <h4 class="font-bold text-indigo-600 mb-2 uppercase text-xs tracking-widest">Tecnologías</h4>
-                    <p class="text-sm text-slate-600 dark:text-slate-400">Este sitio está construido con Tailwind CSS para garantizar rapidez y adaptabilidad en cualquier dispositivo móvil o tablet.</p>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">Este sitio está construido con Tailwind CSS
+                        para garantizar rapidez y adaptabilidad en cualquier dispositivo móvil o tablet.</p>
                 </div>
                 <div class="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                     <h4 class="font-bold mb-3 text-sm text-indigo-600 italic">Preguntas Frecuentes</h4>
                     <div class="space-y-4">
                         <details class="text-sm cursor-pointer group">
-                            <summary class="font-semibold text-slate-700 dark:text-slate-200 list-none flex justify-between items-center">
+                            <summary
+                                class="font-semibold text-slate-700 dark:text-slate-200 list-none flex justify-between items-center">
                                 ¿En qué escuela estudias?
                                 <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
                             </summary>
-                            <p class="mt-2 text-slate-500">Actualmente curso mis estudios en la Unidad Educativa Cambridge.</p>
+                            <p class="mt-2 text-slate-500">Actualmente curso mis estudios en la Unidad Educativa
+                                Cambridge.</p>
                         </details>
-                        <details class="text-sm cursor-pointer group border-t border-slate-200 dark:border-slate-700 pt-2">
-                            <summary class="font-semibold text-slate-700 dark:text-slate-200 list-none flex justify-between items-center">
+                        <details
+                            class="text-sm cursor-pointer group border-t border-slate-200 dark:border-slate-700 pt-2">
+                            <summary
+                                class="font-semibold text-slate-700 dark:text-slate-200 list-none flex justify-between items-center">
                                 ¿Qué haces con IA en Minecraft?
                                 <i class="fas fa-chevron-down text-xs group-open:rotate-180 transition"></i>
                             </summary>
-                            <p class="mt-2 text-slate-500">Utilizo herramientas de IA generativa para diseñar estructuras complejas y automatizar procesos creativos dentro del juego.</p>
+                            <p class="mt-2 text-slate-500">Utilizo herramientas de IA generativa para diseñar
+                                estructuras complejas y automatizar procesos creativos dentro del juego.</p>
                         </details>
                     </div>
                 </div>
             </div>
             <div class="p-6 bg-slate-50 dark:bg-slate-800">
-                <button onclick="toggleHelpModal()" class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">
+                <button onclick="toggleHelpModal()"
+                    class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition">
                     Cerrar Ayuda
                 </button>
             </div>
@@ -119,20 +134,24 @@
     <!-- SECCIÓN HERO -->
     <section id="inicio" class="min-h-screen flex items-center justify-center pt-20 px-6">
         <div class="max-w-4xl text-center reveal">
-            <span class="inline-block px-4 py-1.5 mb-6 text-xs font-semibold tracking-widest uppercase bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">
+            <span
+                class="inline-block px-4 py-1.5 mb-6 text-xs font-semibold tracking-widest uppercase bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full">
                 Unidad Educativa Cambridge
             </span>
             <h1 class="text-5xl md:text-7xl font-bold mb-6 tracking-tight">
-                Hola, soy <span class="text-indigo-600">Fernando Rojas</span>
+                Hola soy <span class="text-indigo-600">Abel Fernando Yupanqui Rojas</span>
             </h1>
             <p class="text-xl md:text-2xl text-slate-600 dark:text-slate-400 mb-10 leading-relaxed max-w-2xl mx-auto">
-                Estudiante de <span class="font-semibold text-slate-900 dark:text-white">Diseño Web</span> e <span class="font-semibold text-slate-900 dark:text-white">Inteligencia Artificial</span>.
+                Estudiante de <span class="font-semibold text-slate-900 dark:text-white">Diseño Web</span> e <span
+                    class="font-semibold text-slate-900 dark:text-white">Inteligencia Artificial</span>.
             </p>
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <a href="#proyectos" class="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/25">
+                <a href="#proyectos"
+                    class="w-full sm:w-auto px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/25">
                     Ver Portafolio
                 </a>
-                <a href="#contacto" class="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold transition-all">
+                <a href="#contacto"
+                    class="w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-semibold transition-all">
                     Contactar
                 </a>
             </div>
@@ -146,11 +165,13 @@
                 <div class="reveal">
                     <h2 class="text-3xl font-bold mb-6">Mis Pasiones</h2>
                     <p class="text-lg text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-                        Me apasiona explorar cómo la tecnología puede transformar la creatividad. Mi formación en Cambridge y mi interés por la informática me permiten crear soluciones digitales innovadoras.
+                        Me apasiona explorar cómo la tecnología puede transformar la creatividad. Mi formación en
+                        Cambridge y mi interés por la informática me permiten crear soluciones digitales innovadoras.
                     </p>
                     <div class="space-y-5">
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600">
                                 <i class="fas fa-chess text-xl"></i>
                             </div>
                             <div>
@@ -159,34 +180,40 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
+                            <div
+                                class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600">
                                 <i class="fas fa-microchip text-xl"></i>
                             </div>
                             <div>
                                 <h4 class="font-bold">Informática Aplicada</h4>
-                                <p class="text-sm text-slate-500 italic">Curiosidad constante por el hardware y software.</p>
+                                <p class="text-sm text-slate-500 italic">Curiosidad constante por el hardware y
+                                    software.</p>
                             </div>
                         </div>
                     </div>
                 </div>
                 <!-- Tarjetas de Habilidades -->
                 <div class="grid grid-cols-2 gap-4 reveal">
-                    <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div
+                        class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                         <i class="fas fa-robot text-indigo-500 text-3xl mb-4"></i>
                         <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">IA Generativa</h3>
                         <p class="text-xs text-slate-500">Creación con IA.</p>
                     </div>
-                    <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div
+                        class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                         <i class="fas fa-paint-brush text-blue-500 text-3xl mb-4"></i>
                         <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">Web Design</h3>
                         <p class="text-xs text-slate-500">Interfaces modernas.</p>
                     </div>
-                    <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div
+                        class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                         <i class="fas fa-cubes text-emerald-500 text-3xl mb-4"></i>
                         <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">Minecraft</h3>
                         <p class="text-xs text-slate-500">Mundos asistidos por IA.</p>
                     </div>
-                    <div class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div
+                        class="p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
                         <i class="fas fa-code text-slate-500 text-3xl mb-4"></i>
                         <h3 class="font-bold mb-1 uppercase text-xs tracking-tighter">Frontend</h3>
                         <p class="text-xs text-slate-500">Desarrollo limpio.</p>
@@ -205,28 +232,36 @@
             </div>
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Bomberman Retro Classic -->
-                <div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
-                    <div class="h-48 bg-gradient-to-br from-amber-500 to-red-600 flex flex-col items-center justify-center text-white">
+                <div
+                    class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
+                    <div
+                        class="h-48 bg-gradient-to-br from-amber-500 to-red-600 flex flex-col items-center justify-center text-white">
                         <i class="fas fa-bomb text-6xl mb-2 animate-bounce"></i>
                         <span class="text-sm font-bold opacity-75">Retro Arcade Game</span>
                     </div>
                     <div class="p-8">
                         <h3 class="text-2xl font-bold mb-3 italic">Bomberman Retro Classic</h3>
                         <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm">
-                            Juego clásico de Bomberman desarrollado en HTML5 Canvas con sintetizador de sonido retro y controles adaptables.
+                            Juego clásico de Bomberman desarrollado en HTML5 Canvas con sintetizador de sonido retro y
+                            controles adaptables.
                         </p>
                         <div class="flex gap-2 flex-wrap mb-6">
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Canvas HTML5</span>
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Web Audio API</span>
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Retro Arcade</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Canvas
+                                HTML5</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Web
+                                Audio API</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Retro
+                                Arcade</span>
                         </div>
-                        <a href="bomberman/index.html" class="text-indigo-600 font-bold inline-flex items-center hover:gap-3 transition-all">
+                        <a href="bomberman/index.html"
+                            class="text-indigo-600 font-bold inline-flex items-center hover:gap-3 transition-all">
                             Jugar Ahora <i class="fas fa-chevron-right ml-2"></i>
                         </a>
                     </div>
                 </div>
                 <!-- Minecraft IA -->
-                <div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
+                <div
+                    class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
                     <div class="h-48 minecraft-gradient flex flex-col items-center justify-center text-white">
                         <i class="fas fa-cube text-6xl mb-2 animate-bounce"></i>
                         <span class="text-sm font-bold opacity-75">IA + Gaming</span>
@@ -234,11 +269,15 @@
                     <div class="p-8">
                         <h3 class="text-2xl font-bold mb-3 italic">Creación de contenido con IA (Minecraft)</h3>
                         <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm">
-                            Integración de modelos de lenguaje para optimizar el diseño de mapas y la narrativa dentro del juego.
+                            Integración de modelos de lenguaje para optimizar el diseño de mapas y la narrativa dentro
+                            del juego.
                         </p>
                         <div class="flex gap-2 flex-wrap mb-6">
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Prompt Engineering</span>
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Minecraft Tools</span>
+                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Prompt
+                                Engineering</span>
+                            <span
+                                class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Minecraft
+                                Tools</span>
                         </div>
                         <button class="text-indigo-600 font-bold flex items-center hover:gap-3 transition-all">
                             Ver más <i class="fas fa-chevron-right ml-2"></i>
@@ -246,7 +285,8 @@
                     </div>
                 </div>
                 <!-- Diseño Web -->
-                <div class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
+                <div
+                    class="group bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 hover:shadow-xl transition-all reveal">
                     <div class="h-48 bg-indigo-600 flex flex-col items-center justify-center text-white">
                         <i class="fas fa-desktop text-6xl mb-2"></i>
                         <span class="text-sm font-bold opacity-75">Frontend Development</span>
@@ -254,11 +294,16 @@
                     <div class="p-8">
                         <h3 class="text-2xl font-bold mb-3 italic">Interfaces Adaptables</h3>
                         <p class="text-slate-600 dark:text-slate-400 mb-6 text-sm">
-                            Desarrollo de sitios web rápidos y accesibles utilizando frameworks modernos como Tailwind CSS.
+                            Desarrollo de sitios web rápidos y accesibles utilizando frameworks modernos como Tailwind
+                            CSS.
                         </p>
                         <div class="flex gap-2 flex-wrap mb-6">
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Tailwind CSS</span>
-                            <span class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Responsive UI</span>
+                            <span
+                                class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Tailwind
+                                CSS</span>
+                            <span
+                                class="text-[10px] font-bold px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">Responsive
+                                UI</span>
                         </div>
                         <button class="text-indigo-600 font-bold flex items-center hover:gap-3 transition-all">
                             Ver más <i class="fas fa-chevron-right ml-2"></i>
@@ -282,23 +327,35 @@
                     <div>
                         <p class="text-indigo-400 text-xs font-bold uppercase mb-4">Sígueme</p>
                         <div class="flex gap-4">
-                            <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i class="fab fa-github"></i></a>
-                            <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i class="fab fa-linkedin"></i></a>
-                            <a href="#" class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i class="fab fa-instagram"></i></a>
+                            <a href="#"
+                                class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i
+                                    class="fab fa-github"></i></a>
+                            <a href="#"
+                                class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i
+                                    class="fab fa-linkedin"></i></a>
+                            <a href="#"
+                                class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center hover:bg-indigo-600 transition"><i
+                                    class="fab fa-instagram"></i></a>
                         </div>
                     </div>
                 </div>
-                <form class="space-y-4" onsubmit="event.preventDefault(); alert('¡Gracias Fernando! Recibí tu mensaje.');">
-                    <input type="text" placeholder="Nombre" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                    <textarea placeholder="Mensaje" rows="4" class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required></textarea>
-                    <button class="w-full py-3 bg-indigo-600 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20">Enviar</button>
+                <form class="space-y-4"
+                    onsubmit="event.preventDefault(); alert('¡Gracias Fernando! Recibí tu mensaje.');">
+                    <input type="text" placeholder="Nombre"
+                        class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required>
+                    <textarea placeholder="Mensaje" rows="4"
+                        class="w-full p-3 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required></textarea>
+                    <button
+                        class="w-full py-3 bg-indigo-600 rounded-lg font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20">Enviar</button>
                 </form>
             </div>
         </div>
     </section>
 
     <footer class="py-10 text-center text-slate-400 bg-slate-900 text-xs">
-        <p>Fernando Rojas &copy; 2024 - Estudiante de IA y Diseño Web</p>
+        <p>Abel Fernando Yupanqui Rojas &copy; 2024 - Estudiante de IA y Diseño Web</p>
     </footer>
 
     <!-- SCRIPTS -->
@@ -314,7 +371,7 @@
             helpModal.classList.toggle('active');
             document.body.style.overflow = helpModal.classList.contains('active') ? 'hidden' : 'auto';
         }
-        helpModal.addEventListener('click', (e) => { if(e.target === helpModal) toggleHelpModal(); });
+        helpModal.addEventListener('click', (e) => { if (e.target === helpModal) toggleHelpModal(); });
 
         // Animación de aparición con scroll
         function reveal() {
@@ -329,4 +386,5 @@
         window.onload = reveal;
     </script>
 </body>
+
 </html>
