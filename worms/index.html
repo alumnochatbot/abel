@@ -1,0 +1,4075 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WORMS ARMAGEDDON — Edición Web HTML5</title>
+  <!-- Tailwind CSS para UI moderna y responsiva -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Fuente Inter y Bangers/Impact para estilo arcade -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #111538;
+      font-family: 'Inter', sans-serif;
+    }
+    .font-arcade {
+      font-family: 'Bangers', Impact, 'Arial Black', sans-serif;
+      letter-spacing: 0.05em;
+    }
+    /* Botones estilo arcade con relieve y animación suave */
+    .btn-worms {
+      transition: transform 0.1s ease, filter 0.15s ease, box-shadow 0.1s ease;
+    }
+    .btn-worms:hover {
+      filter: brightness(1.08);
+    }
+    .btn-worms:active {
+      transform: translateY(3px);
+    }
+    /* Scrollbar estilizado para el panel de armas y lobby */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.8);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #f59e0b;
+      border-radius: 9999px;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="text-white">
+
+  <!-- ====================================================================== -->
+  <!-- 1. PANTALLA DE MENÚ PRINCIPAL                                          -->
+  <!-- ====================================================================== -->
+  <section id="screen-menu" class="relative w-full h-full flex flex-col items-center justify-between p-4 sm:p-8 bg-gradient-to-b from-[#111538] via-[#1f265c] to-[#2e377a] overflow-hidden">
+    <!-- Fondo estrellado -->
+    <div class="absolute inset-0 pointer-events-none opacity-65 bg-[radial-gradient(#fde047_1.2px,transparent_1.2px)] [background-size:46px_46px]"></div>
+
+    <!-- Silueta decorativa de islas de queso suizo y agua ondulante -->
+    <div class="absolute bottom-0 inset-x-0 h-40 pointer-events-none">
+      <div class="absolute bottom-8 left-0 w-[44%] h-28 bg-gradient-to-t from-[#995704] to-[#f7c51e] rounded-tr-[64px] border-t-4 border-[#ffe066]"></div>
+      <div class="absolute bottom-8 right-0 w-[46%] h-32 bg-gradient-to-t from-[#995704] to-[#f7c51e] rounded-tl-[72px] border-t-4 border-[#ffe066]"></div>
+      <div class="absolute bottom-0 inset-x-0 h-11 bg-gradient-to-b from-[#7686f2] via-[#4856c4] to-[#242d78] border-t-2 border-[#a5b4fc]"></div>
+    </div>
+
+    <!-- Barra Superior -->
+    <header class="relative z-10 w-full max-w-5xl flex items-center justify-between">
+      <span class="px-3.5 py-1.5 rounded-full bg-slate-950/75 border border-amber-400/40 text-amber-300 text-xs font-extrabold tracking-wider uppercase">
+        Edición HTML5 · Motor Determinista 50 Hz
+      </span>
+      <button id="btn-mute-menu" class="px-3.5 py-2 rounded-xl bg-slate-900/85 border border-white/20 hover:border-amber-400 text-xs font-bold flex items-center gap-2 cursor-pointer">
+        <span id="mute-icon-menu">🔊 Sonido Activo</span>
+      </button>
+    </header>
+
+    <!-- Logotipo Vectorial Emblemático + Acciones Principales -->
+    <main class="relative z-10 flex flex-col items-center gap-6 my-auto w-full max-w-2xl">
+      <div id="menu-logo-container" class="w-full flex justify-center"></div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full mt-1">
+        <button id="btn-quick-play" class="btn-worms flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-b from-amber-400 to-orange-600 text-slate-950 font-black text-lg shadow-[0_6px_0_#7c2d12] cursor-pointer">
+          <span>▶</span> PARTIDA RÁPIDA (VS IA)
+        </button>
+
+        <button id="btn-open-lobby" class="btn-worms flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-700 text-white font-black text-lg shadow-[0_6px_0_#1e3a8a] cursor-pointer">
+          <span>⚔️</span> EQUIPOS Y ESCENARIOS
+        </button>
+
+        <button id="btn-full-wormage" class="btn-worms flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-gradient-to-b from-rose-500 to-red-800 text-white font-extrabold text-base shadow-[0_5px_0_#450a0a] cursor-pointer">
+          <span>🔥</span> THE FULL WORMAGE
+        </button>
+
+        <button id="btn-open-help" class="btn-worms flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-slate-900/90 border-2 border-indigo-400/50 text-indigo-100 font-extrabold text-base shadow-[0_5px_0_#1e1b4b] hover:border-amber-400 cursor-pointer">
+          <span>❓</span> GUÍA DE CONTROLES
+        </button>
+      </div>
+    </main>
+
+    <footer class="relative z-10 text-xs text-indigo-200/80 text-center">
+      Terreno destruible por píxeles · Arsenal F1–F12 completo · Cajas en paracaídas · Física 50 ticks/s
+    </footer>
+  </section>
+
+  <!-- ====================================================================== -->
+  <!-- 2. PANTALLA DE LOBBY (PERSONALIZACIÓN DE EQUIPOS, ESQUEMAS Y BIOMAS)   -->
+  <!-- ====================================================================== -->
+  <section id="screen-lobby" class="hidden w-full h-full bg-gradient-to-b from-[#111538] via-[#1b2254] to-[#0f172a] p-4 sm:p-6 overflow-y-auto">
+    <div class="max-w-6xl mx-auto flex flex-col gap-5 pb-8">
+      <!-- Cabecera Lobby -->
+      <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900/85 border border-white/15 rounded-2xl p-4">
+        <div class="flex items-center gap-3">
+          <button id="btn-lobby-back" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-sm cursor-pointer">
+            ← Menú
+          </button>
+          <h1 class="text-lg sm:text-2xl font-black text-amber-400">
+            Configuración de Batalla (.WSC / .WGT)
+          </h1>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-export-json" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold border border-white/15 cursor-pointer">
+            ⬇ Exportar JSON
+          </button>
+          <label class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold border border-white/15 cursor-pointer">
+            ⬆ Importar JSON
+            <input id="input-import-json" type="file" accept=".json" class="hidden" />
+          </label>
+          <button id="btn-lobby-start" class="btn-worms px-6 py-2.5 rounded-xl bg-gradient-to-b from-amber-400 to-orange-600 text-slate-950 font-black text-sm shadow-lg cursor-pointer">
+            ▶ ¡INICIAR COMBATE!
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- Columna 1: Esquemas y Biomas -->
+        <div class="flex flex-col gap-4 bg-slate-900/80 border border-white/15 rounded-2xl p-5">
+          <h2 class="font-black text-amber-300 text-sm uppercase tracking-wider">1. Esquema de Juego</h2>
+          <div id="lobby-schemes-list" class="flex flex-col gap-2"></div>
+
+          <h2 class="font-black text-amber-300 text-sm uppercase tracking-wider mt-2">2. Bioma y Mapa</h2>
+          <div id="lobby-biomes-list" class="flex flex-col gap-2"></div>
+
+          <div class="flex items-center justify-between pt-3 border-t border-white/10">
+            <span id="lobby-seed-label" class="text-xs text-slate-400 font-mono">Semilla: #19990129</span>
+            <button id="btn-new-seed" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold cursor-pointer">
+              🎲 Nueva Isla
+            </button>
+          </div>
+        </div>
+
+        <!-- Columnas 2 y 3: Escuadras Participantes -->
+        <div class="lg:col-span-2 flex flex-col gap-4 bg-slate-900/80 border border-white/15 rounded-2xl p-5">
+          <div class="flex items-center justify-between">
+            <h2 id="lobby-teams-title" class="font-black text-amber-300 text-sm uppercase tracking-wider">
+              3. Escuadras Participantes (3 / 4)
+            </h2>
+            <button id="btn-add-team" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold cursor-pointer">
+              + Añadir Equipo
+            </button>
+          </div>
+
+          <div id="lobby-teams-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================================== -->
+  <!-- 3. ARENA DE BATALLA TÁCTICA (CANVAS 2D + HUD FIEL A LA REFERENCIA)     -->
+  <!-- ====================================================================== -->
+  <section id="screen-playing" class="hidden relative w-full h-full overflow-hidden bg-[#111538]">
+    <!-- Lienzo principal de simulación -->
+    <canvas id="game-canvas" class="cursor-crosshair"></canvas>
+
+    <!-- Logotipo Superior Central (fiel a la referencia, clic para alternar) -->
+    <div id="playing-logo-overlay" class="absolute top-1 left-1/2 -translate-x-1/2 z-10 opacity-95 hover:opacity-40 transition-opacity cursor-pointer" title="Clic para ocultar o mostrar logotipo"></div>
+
+    <!-- Barra Superior de Estado y Controles Rápidos -->
+    <div class="absolute top-3 inset-x-3 z-20 flex flex-wrap items-start justify-between gap-2 pointer-events-none">
+      <!-- Izquierda: Feed de batalla y Arma Activa -->
+      <div class="flex flex-col gap-1.5 pointer-events-auto">
+        <div class="px-3.5 py-1.5 rounded-xl bg-slate-950/85 border border-white/20 text-xs sm:text-sm font-bold text-white shadow-lg flex items-center gap-2">
+          <span id="hud-turn-dot" class="w-2.5 h-2.5 rounded-full animate-pulse bg-amber-400"></span>
+          <span id="hud-killfeed">¡Prepárate para la batalla!</span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btn-open-arsenal" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border-2 border-amber-400/75 text-amber-300 text-xs font-black shadow-lg hover:bg-slate-800 cursor-pointer">
+            <span>🎯</span>
+            <span id="hud-weapon-label">[F1] Bazooka</span>
+            <span class="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 text-[10px]">Arsenal (Tab)</span>
+          </button>
+
+          <!-- Selector rápido de espoleta 1..5s para granadas -->
+          <div id="hud-fuse-box" class="hidden items-center gap-1 px-2 py-1 rounded-xl bg-slate-950/90 border border-white/20 text-xs">
+            <span class="text-[10px] text-slate-400 mr-1">Mecha:</span>
+            <button data-fuse="1" class="fuse-btn w-5 h-5 rounded font-bold cursor-pointer">1</button>
+            <button data-fuse="2" class="fuse-btn w-5 h-5 rounded font-bold cursor-pointer">2</button>
+            <button data-fuse="3" class="fuse-btn w-5 h-5 rounded font-bold cursor-pointer">3</button>
+            <button data-fuse="4" class="fuse-btn w-5 h-5 rounded font-bold cursor-pointer">4</button>
+            <button data-fuse="5" class="fuse-btn w-5 h-5 rounded font-bold cursor-pointer">5</button>
+          </div>
+
+          <!-- Botón rotar viga -->
+          <button id="btn-rotate-girder" class="hidden px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-sky-400/50 text-sky-300 text-xs font-bold cursor-pointer">
+            Rotar Viga (0°)
+          </button>
+        </div>
+
+        <div id="hud-target-hint" class="hidden px-3 py-1 rounded-lg bg-sky-400 text-slate-950 font-black text-xs animate-bounce w-fit">
+          🎯 Haz clic en el mapa para fijar el objetivo
+        </div>
+      </div>
+
+      <!-- Derecha: Botones de Cámara, Logo, Sonido y Pausa -->
+      <div class="flex items-center gap-1.5 pointer-events-auto">
+        <button id="btn-toggle-logo" class="px-2.5 py-2 rounded-xl bg-slate-950/85 border border-white/20 text-amber-300 text-xs font-black hover:border-amber-400 cursor-pointer" title="Mostrar/Ocultar Logo">
+          WA
+        </button>
+        <button id="btn-zoom-in" class="px-2.5 py-2 rounded-xl bg-slate-950/85 border border-white/20 text-white text-xs font-bold hover:border-amber-400 cursor-pointer" title="Acercar cámara">
+          🔍+
+        </button>
+        <button id="btn-zoom-out" class="px-2.5 py-2 rounded-xl bg-slate-950/85 border border-white/20 text-white text-xs font-bold hover:border-amber-400 cursor-pointer" title="Alejar cámara">
+          🔍-
+        </button>
+        <button id="btn-mute-game" class="px-2.5 py-2 rounded-xl bg-slate-950/85 border border-white/20 text-white text-xs font-bold hover:border-amber-400 cursor-pointer" title="Sonido">
+          🔊
+        </button>
+        <button id="btn-pause-game" class="px-2.5 py-2 rounded-xl bg-slate-950/85 border border-white/20 text-white text-xs font-bold hover:border-amber-400 cursor-pointer" title="Pausa">
+          ⏸
+        </button>
+      </div>
+    </div>
+
+    <!-- ==================================================================== -->
+    <!-- HUD INFERIOR FIEL A LA IMAGEN DE REFERENCIA                          -->
+    <!-- Izquierda: Reloj + Contador | Centro: Barras Equipos | Der: Viento   -->
+    <!-- ==================================================================== -->
+    <div class="absolute bottom-2 inset-x-3 z-20 flex items-end justify-between gap-2 pointer-events-none">
+      <!-- Esquina Inferior Izquierda: Reloj de Ronda + Temporizador de Turno -->
+      <div class="flex flex-col items-center bg-slate-950/90 border-2 border-slate-300/80 rounded-lg px-2.5 py-1 shadow-xl pointer-events-auto min-w-[68px]">
+        <div id="hud-round-clock" class="text-[11px] font-mono font-bold px-1.5 rounded border border-white/25 bg-slate-900 text-slate-200">
+          05:00
+        </div>
+        <div id="hud-turn-timer" class="text-2xl sm:text-3xl font-black leading-tight tabular-nums text-white">
+          45
+        </div>
+      </div>
+
+      <!-- Centro Inferior: Barras de Salud por Equipo -->
+      <div id="hud-team-bars" class="flex flex-col gap-1 bg-slate-950/85 border border-white/20 rounded-xl px-3 py-1.5 shadow-xl pointer-events-auto max-w-md w-full"></div>
+
+      <!-- Esquina Inferior Derecha: Medidor de Viento -->
+      <div class="bg-slate-950/90 border-2 border-slate-300/80 rounded-lg px-2.5 py-1.5 shadow-xl pointer-events-auto min-w-[128px]">
+        <div class="flex items-center justify-between text-[10px] font-bold text-slate-300 mb-1">
+          <span>💨 VIENTO</span>
+          <span id="hud-wind-text" class="font-mono text-white">0</span>
+        </div>
+        <div class="w-full h-3 bg-slate-900 border border-black rounded-sm relative overflow-hidden flex">
+          <div class="w-1/2 h-full flex justify-end border-r border-white/40">
+            <div id="hud-wind-left" class="h-full bg-gradient-to-l from-sky-400 to-blue-600 transition-all" style="width: 0%"></div>
+          </div>
+          <div class="w-1/2 h-full flex justify-start">
+            <div id="hud-wind-right" class="h-full bg-gradient-to-r from-amber-400 to-rose-600 transition-all" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles Táctiles Responsivos (Móvil / Tablet) -->
+    <div class="sm:hidden absolute bottom-24 inset-x-3 z-20 flex items-center justify-between pointer-events-none">
+      <div class="flex items-center gap-1.5 pointer-events-auto">
+        <button data-touch-key="ArrowLeft" class="touch-key-btn px-3.5 py-3 rounded-xl bg-slate-900/90 border border-white/25 text-white font-black">◀</button>
+        <button data-touch-key="ArrowRight" class="touch-key-btn px-3.5 py-3 rounded-xl bg-slate-900/90 border border-white/25 text-white font-black">▶</button>
+        <button data-touch-key="ArrowUp" class="touch-key-btn px-3.5 py-3 rounded-xl bg-slate-900/90 border border-white/25 text-white font-black">▲</button>
+        <button data-touch-key="ArrowDown" class="touch-key-btn px-3.5 py-3 rounded-xl bg-slate-900/90 border border-white/25 text-white font-black">▼</button>
+      </div>
+      <div class="flex items-center gap-2 pointer-events-auto">
+        <button id="btn-touch-jump" class="px-3.5 py-3 rounded-xl bg-sky-600/95 text-white font-black text-xs">SALTAR</button>
+        <button id="btn-touch-fire" class="px-4 py-3 rounded-xl bg-rose-600/95 text-white font-black text-xs shadow-lg">FUEGO</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================================================================== -->
+  <!-- 4. MODALES Y NOTIFICACIONES FLOTANTES                                  -->
+  <!-- ====================================================================== -->
+  <!-- Notificación Toast -->
+  <div id="toast-banner" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-1.5 rounded-full bg-slate-950/95 border border-amber-400 text-amber-300 text-xs font-extrabold shadow-2xl pointer-events-none"></div>
+
+  <!-- Modal Panel Táctico de Armamento F1–F12 -->
+  <div id="modal-arsenal" class="hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6">
+    <div class="bg-slate-950/95 border-2 border-amber-400/80 rounded-2xl max-w-5xl w-full max-h-[88vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-3.5 bg-slate-900 border-b border-white/15">
+        <div>
+          <h2 class="text-lg font-black text-amber-400">🎒 Arsenal Táctico Worms Armageddon (F1 – F12)</h2>
+          <p id="arsenal-subtitle" class="text-xs text-slate-400">Selecciona un arma o utilidad para el turno activo</p>
+        </div>
+        <button id="btn-close-arsenal" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold cursor-pointer">✕</button>
+      </div>
+      <div id="arsenal-grid" class="p-4 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5"></div>
+    </div>
+  </div>
+
+  <!-- Modal Guía de Controles -->
+  <div id="modal-help" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400/70 rounded-2xl max-w-2xl w-full p-6 shadow-2xl">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-black text-amber-400">❓ Controles Tácticos de Worms Armageddon</h2>
+        <button id="btn-close-help" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        <div class="p-3 rounded-xl bg-slate-800/85 border border-white/10">
+          <span class="font-bold text-amber-300">← / → (o A / D):</span> Caminar y escalar pendientes de hasta 8 px.
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/85 border border-white/10">
+          <span class="font-bold text-amber-300">↑ / ↓ (o W / S):</span> Apuntar ángulo de disparo o escalar cuerda.
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/85 border border-white/10">
+          <span class="font-bold text-amber-300">Enter / Retroceso:</span> Salto frontal / Voltereta trasera alta.
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/85 border border-white/10">
+          <span class="font-bold text-amber-300">Espacio (Mantener):</span> Cargar potencia y soltar para disparar.
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/85 border border-white/10">
+          <span class="font-bold text-amber-300">Clic Derecho / Tab / F1–F12:</span> Abrir Arsenal Táctico o ciclar categorías.
+        </div>
+        <div class="p-3 rounded-xl bg-slate-800/85 border border-white/10">
+          <span class="font-bold text-amber-300">Teclas 1–5 / R / C:</span> Mecha (1–5s) / Rotar viga / Centrar cámara.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Pausa -->
+  <div id="modal-pause" class="hidden fixed inset-0 z-40 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-amber-400/70 rounded-2xl max-w-sm w-full p-6 flex flex-col gap-3 text-center shadow-2xl">
+      <h2 class="text-2xl font-black text-amber-400">PARTIDA EN PAUSA</h2>
+      <p id="pause-info-text" class="text-xs text-slate-300">Esquema: Clásico · Bioma: Queso Suizo</p>
+      <button id="btn-resume-game" class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-sm cursor-pointer">
+        CONTINUAR BATALLA
+      </button>
+      <button id="btn-restart-match" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-sm cursor-pointer">
+        REINICIAR CON NUEVA ISLA
+      </button>
+      <button id="btn-quit-to-menu" class="w-full py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm cursor-pointer">
+        VOLVER AL MENÚ PRINCIPAL
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Victoria / Fin de Partida -->
+  <div id="modal-gameover" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 rounded-3xl max-w-md w-full p-7 flex flex-col items-center text-center gap-4 shadow-2xl">
+      <div class="text-5xl">🏆</div>
+      <div class="text-xs uppercase tracking-widest text-amber-300 font-bold">
+        ¡Victoria en Worms Armageddon!
+      </div>
+      <h2 id="gameover-winner-name" class="text-3xl font-black text-amber-400">Escuadrón Rojo</h2>
+      <p id="gameover-survivors" class="text-sm text-slate-300">Supervivientes en pie: 3</p>
+      <div class="w-full flex flex-col gap-2 mt-2">
+        <button id="btn-rematch" class="w-full py-3.5 rounded-2xl bg-gradient-to-b from-amber-400 to-orange-600 text-slate-950 font-black text-base shadow-lg cursor-pointer">
+          REVANCHA RÁPIDA
+        </button>
+        <button id="btn-gameover-lobby" class="w-full py-3 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm cursor-pointer">
+          CONFIGURAR NUEVA PARTIDA
+        </button>
+        <button id="btn-gameover-menu" class="w-full py-2.5 rounded-2xl text-slate-400 hover:text-white text-xs font-bold cursor-pointer">
+          Menú Principal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================== -->
+  <!-- 5. MOTOR DETERMINISTA, TERRENO DESTRUIBLE, AUDIO Y LÓGICA COMPLETA      -->
+  <!-- ====================================================================== -->
+  <script>
+    (() => {
+      'use strict';
+
+      // ======================================================================
+      // CONSTANTES DEL MOTOR (50 TICKS/S DETERMINISTA)
+      // ======================================================================
+      const TICK_RATE = 50; // 20 ms por tick
+      const FIXED_DT = 1 / TICK_RATE;
+      const WORLD_W = 1920;
+      const WORLD_H = 720;
+      const WORM_W = 9;
+      const WORM_H = 16;
+      const MAX_STEP_CLIMB = 8; // Escalada automática hasta 8 px
+      const GRAVITY = 0.24;
+      const BASE_WATER_Y = 668;
+
+      // ======================================================================
+      // CATÁLOGO COMPLETO DE ARMAMENTO F1–F12 + UTILIDADES
+      // ======================================================================
+      const WEAPONS_CATALOG = [
+        // UTILIDADES (fKey: 0)
+        { id: 'jetpack', name: 'Jet Pack', category: 'UTIL', fKey: 0, type: 'utility', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Propulsor aéreo con combustible limitado.', accentColor: '#38bdf8' },
+        { id: 'low_gravity', name: 'Baja Gravedad', category: 'UTIL', fKey: 0, type: 'utility', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Reduce la gravedad durante todo este turno.', accentColor: '#818cf8' },
+        { id: 'fast_walk', name: 'Paso Rápido', category: 'UTIL', fKey: 0, type: 'utility', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Duplica la velocidad de movimiento del gusano.', accentColor: '#34d399' },
+        { id: 'laser_sight', name: 'Mira Láser', category: 'UTIL', fKey: 0, type: 'utility', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Línea láser de precisión para apuntar.', accentColor: '#f43f5e' },
+        { id: 'double_damage', name: 'Daño Doble', category: 'UTIL', fKey: 0, type: 'utility', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Duplica daño y radio explosivo este turno.', accentColor: '#f59e0b' },
+
+        // F1 — PROYECTILES DIRECTOS Y DIRIGIDOS
+        { id: 'bazooka', name: 'Bazooka', category: 'F1', fKey: 1, type: 'projectile', damage: 50, blastRadius: 46, knockback: 7.5, windFactor: 1.0, bounciness: 0, description: 'Cohete parabólico afectado por el viento.', accentColor: '#22c55e' },
+        { id: 'homing_missile', name: 'Misil Teledirigido', category: 'F1', fKey: 1, type: 'projectile', damage: 50, blastRadius: 46, knockback: 7.5, windFactor: 0.2, bounciness: 0, needsTarget: true, description: 'Marca un objetivo en el mapa y el misil girará hacia él.', accentColor: '#ef4444' },
+        { id: 'mortar', name: 'Mortero', category: 'F1', fKey: 1, type: 'projectile', damage: 45, blastRadius: 40, knockback: 6.5, windFactor: 0.6, bounciness: 0, clusterCount: 4, description: 'Proyectil pesado que libera 4 fragmentos al impactar.', accentColor: '#eab308' },
+        { id: 'homing_pigeon', name: 'Paloma Teledirigida', category: 'F1', fKey: 1, type: 'projectile', damage: 55, blastRadius: 48, knockback: 8.0, windFactor: 0, bounciness: 0, needsTarget: true, description: 'Paloma mensajera que busca el punto marcado.', accentColor: '#e2e8f0' },
+        { id: 'sheep_launcher', name: 'Lanzador Ovejas', category: 'F1', fKey: 1, type: 'projectile', damage: 60, blastRadius: 54, knockback: 9.0, windFactor: 0.7, bounciness: 0.55, description: 'Dispara una oveja voladora en arco.', accentColor: '#f472b6' },
+
+        // F2 — GRANADAS Y EXPLOSIVOS
+        { id: 'grenade', name: 'Granada', category: 'F2', fKey: 2, type: 'grenade', damage: 50, blastRadius: 48, knockback: 8.0, windFactor: 0.25, bounciness: 0.62, hasFuse: true, description: 'Granada con rebote y espoleta ajustable (1–5s).', accentColor: '#16a34a' },
+        { id: 'cluster_bomb', name: 'Bomba Racimo', category: 'F2', fKey: 2, type: 'grenade', damage: 40, blastRadius: 38, knockback: 6.5, windFactor: 0.25, bounciness: 0.58, hasFuse: true, clusterCount: 5, description: 'Dispersa 5 submuniciones explosivas al detonar.', accentColor: '#f97316' },
+        { id: 'banana_bomb', name: 'Bomba Banana', category: 'F2', fKey: 2, type: 'grenade', damage: 55, blastRadius: 52, knockback: 9.0, windFactor: 0.3, bounciness: 0.82, hasFuse: true, clusterCount: 5, description: 'Rebota con fuerza y libera 5 bananas devastadoras.', accentColor: '#facc15' },
+        { id: 'battle_axe', name: 'Hacha de Batalla', category: 'F2', fKey: 2, type: 'melee', damage: 50, blastRadius: 24, knockback: 4.0, windFactor: 0, bounciness: 0, description: 'Reduce a la mitad la vida del rival cercano.', accentColor: '#94a3b8' },
+        { id: 'earthquake', name: 'Terremoto', category: 'F2', fKey: 2, type: 'super', damage: 15, blastRadius: 0, knockback: 6.0, windFactor: 0, bounciness: 0, description: 'Sacude toda la isla desplazando a los gusanos.', accentColor: '#a16207' },
+
+        // F3 — ARMAS DE FUEGO DIRECTO
+        { id: 'shotgun', name: 'Escopeta', category: 'F3', fKey: 3, type: 'hitscan', damage: 25, blastRadius: 18, knockback: 6.5, windFactor: 0, bounciness: 0, shotsPerTurn: 2, description: '2 disparos certeros en línea recta por turno.', accentColor: '#78716c' },
+        { id: 'handgun', name: 'Pistola', category: 'F3', fKey: 3, type: 'hitscan', damage: 10, blastRadius: 10, knockback: 3.2, windFactor: 0, bounciness: 0, shotsPerTurn: 6, description: '6 disparos rápidos ideales para empujar al agua.', accentColor: '#64748b' },
+        { id: 'uzi', name: 'Uzi', category: 'F3', fKey: 3, type: 'hitscan', damage: 45, blastRadius: 14, knockback: 7.5, windFactor: 0, bounciness: 0, shotsPerTurn: 1, description: 'Ráfaga automática de 12 balas con dispersión.', accentColor: '#475569' },
+        { id: 'minigun', name: 'Minigun', category: 'F3', fKey: 3, type: 'hitscan', damage: 70, blastRadius: 18, knockback: 11.0, windFactor: 0, bounciness: 0, shotsPerTurn: 1, description: 'Tormenta de 22 proyectiles que perfora el terreno.', accentColor: '#334155' },
+        { id: 'longbow', name: 'Arco Largo', category: 'F3', fKey: 3, type: 'projectile', damage: 22, blastRadius: 12, knockback: 4.5, windFactor: 0.4, bounciness: 0, shotsPerTurn: 2, description: '2 flechas que se clavan formando peldaños.', accentColor: '#b45309' },
+
+        // F4 — COMBATE CUERPO A CUERPO Y EMPUJE
+        { id: 'fire_punch', name: 'Puño de Fuego', category: 'F4', fKey: 4, type: 'melee', damage: 35, blastRadius: 22, knockback: 9.5, windFactor: 0, bounciness: 0, description: 'Gancho flameante que lanza rivales por los aires.', accentColor: '#ea580c' },
+        { id: 'dragon_ball', name: 'Bola de Dragón', category: 'F4', fKey: 4, type: 'projectile', damage: 40, blastRadius: 26, knockback: 10.5, windFactor: 0, bounciness: 0, description: 'Onda de energía horizontal de alto impacto.', accentColor: '#0ea5e9' },
+        { id: 'kamikaze', name: 'Kamikaze', category: 'F4', fKey: 4, type: 'melee', damage: 55, blastRadius: 48, knockback: 9.0, windFactor: 0, bounciness: 0, description: 'El gusano se lanza atravesando todo y detonando.', accentColor: '#dc2626' },
+        { id: 'suicide_bomber', name: 'Bombardero Suicida', category: 'F4', fKey: 4, type: 'melee', damage: 75, blastRadius: 68, knockback: 11.0, windFactor: 0, bounciness: 0, description: 'Sacrifica al gusano en una gran explosión.', accentColor: '#991b1b' },
+        { id: 'prod', name: 'Empujón (Prod)', category: 'F4', fKey: 4, type: 'melee', damage: 0, blastRadius: 12, knockback: 5.8, windFactor: 0, bounciness: 0, description: 'Toque cómico con el dedo para tirar rivales al mar.', accentColor: '#f472b6' },
+
+        // F5 — DETONABLES Y FAUNA MÓVIL
+        { id: 'dynamite', name: 'Dinamita', category: 'F5', fKey: 5, type: 'deploy', damage: 75, blastRadius: 68, knockback: 10.5, windFactor: 0, bounciness: 0, description: 'Coloca TNT con mecha de 5 segundos. ¡Corre!', accentColor: '#ef4444' },
+        { id: 'mine', name: 'Mina', category: 'F5', fKey: 5, type: 'deploy', damage: 50, blastRadius: 46, knockback: 8.0, windFactor: 0, bounciness: 0, description: 'Mina terrestre que se activa por proximidad.', accentColor: '#4b5563' },
+        { id: 'sheep', name: 'Oveja', category: 'F5', fKey: 5, type: 'animal', damage: 70, blastRadius: 64, knockback: 10.0, windFactor: 0, bounciness: 0.4, description: 'Camina y salta obstáculos; Espacio para detonar.', accentColor: '#f8fafc' },
+        { id: 'super_sheep', name: 'Súper Oveja', category: 'F5', fKey: 5, type: 'animal', damage: 75, blastRadius: 68, knockback: 10.5, windFactor: 0, bounciness: 0.4, description: 'Oveja explosiva de gran alcance.', accentColor: '#3b82f6' },
+        { id: 'mole_bomb', name: 'Bomba Topo', category: 'F5', fKey: 5, type: 'animal', damage: 60, blastRadius: 54, knockback: 8.5, windFactor: 0, bounciness: 0, description: 'Excava túneles bajo tierra y detona.', accentColor: '#78350f' },
+
+        // F6 — ATAQUES AÉREOS COORDINADOS
+        { id: 'air_strike', name: 'Ataque Aéreo', category: 'F6', fKey: 6, type: 'airstrike', damage: 35, blastRadius: 34, knockback: 6.5, windFactor: 0.4, bounciness: 0, needsTarget: true, description: 'Descarga 5 misiles sobre el punto marcado.', accentColor: '#0284c7' },
+        { id: 'napalm_strike', name: 'Ataque Napalm', category: 'F6', fKey: 6, type: 'airstrike', damage: 28, blastRadius: 28, knockback: 5.0, windFactor: 0.8, bounciness: 0, needsTarget: true, isFire: true, description: 'Bombardeo incendiario que cubre de llamas.', accentColor: '#f97316' },
+        { id: 'mail_strike', name: 'Ataque Postal', category: 'F6', fKey: 6, type: 'airstrike', damage: 40, blastRadius: 38, knockback: 7.5, windFactor: 0.5, bounciness: 0.3, needsTarget: true, description: 'Entrega aérea de 5 paquetes explosivos.', accentColor: '#dc2626' },
+        { id: 'mine_strike', name: 'Lluvia de Minas', category: 'F6', fKey: 6, type: 'airstrike', damage: 45, blastRadius: 42, knockback: 7.0, windFactor: 0.3, bounciness: 0.2, needsTarget: true, description: 'Siembra 5 minas activas desde el cielo.', accentColor: '#6b7280' },
+        { id: 'mole_squadron', name: 'Escuadrón Topo', category: 'F6', fKey: 6, type: 'airstrike', damage: 45, blastRadius: 42, knockback: 7.0, windFactor: 0.2, bounciness: 0, needsTarget: true, description: '5 topos perforan las islas desde arriba.', accentColor: '#92400e' },
+
+        // F7 — EXCAVACIÓN Y CONSTRUCCIÓN
+        { id: 'blow_torch', name: 'Soplete', category: 'F7', fKey: 7, type: 'dig', damage: 25, blastRadius: 20, knockback: 5.0, windFactor: 0, bounciness: 0, description: 'Excava un túnel en la dirección de apuntado.', accentColor: '#38bdf8' },
+        { id: 'pneumatic_drill', name: 'Taladro Neumático', category: 'F7', fKey: 7, type: 'dig', damage: 25, blastRadius: 18, knockback: 3.0, windFactor: 0, bounciness: 0, description: 'Perfora verticalmente hacia abajo.', accentColor: '#eab308' },
+        { id: 'girder', name: 'Viga Metálica', category: 'F7', fKey: 7, type: 'girder', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, needsTarget: true, description: 'Coloca un puente de acero indestructible (R rotar).', accentColor: '#94a3b8' },
+        { id: 'baseball_bat', name: 'Bate de Béisbol', category: 'F7', fKey: 7, type: 'melee', damage: 30, blastRadius: 20, knockback: 14.5, windFactor: 0, bounciness: 0, description: '¡Home run! Lanza a un enemigo fuera del mapa.', accentColor: '#d97706' },
+        { id: 'girder_pack', name: 'Plataforma Doble', category: 'F7', fKey: 7, type: 'girder', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, needsTarget: true, description: 'Coloca una viga extra ancha de protección.', accentColor: '#cbd5e1' },
+
+        // F8 — MOVILIDAD Y TÁCTICAS
+        { id: 'ninja_rope', name: 'Cuerda Ninja', category: 'F8', fKey: 8, type: 'rope', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Engancha techos con Espacio, balancéate (←/→) y sube/baja (↑/↓).', accentColor: '#f59e0b' },
+        { id: 'bungee', name: 'Cuerda Elástica', category: 'F8', fKey: 8, type: 'utility', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Permite saltar sin daño de caída.', accentColor: '#10b981' },
+        { id: 'parachute', name: 'Paracaídas', category: 'F8', fKey: 8, type: 'utility', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Despliega un paracaídas para planear con el viento.', accentColor: '#f8fafc' },
+        { id: 'teleport', name: 'Teletransporte', category: 'F8', fKey: 8, type: 'teleport', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, needsTarget: true, description: 'Haz clic en cualquier punto libre para teletransportarte.', accentColor: '#a855f7' },
+        { id: 'scales_justice', name: 'Balanza Justicia', category: 'F8', fKey: 8, type: 'super', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Iguala la salud total entre los equipos vivos.', accentColor: '#fbbf24' },
+
+        // F9 — ESPECIALES DEVASTADORAS
+        { id: 'super_banana', name: 'Súper Banana', category: 'F9', fKey: 9, type: 'grenade', damage: 75, blastRadius: 68, knockback: 11.0, windFactor: 0.3, bounciness: 0.85, hasFuse: true, clusterCount: 5, description: 'Versión colosal de la Bomba Banana.', accentColor: '#fde047' },
+        { id: 'holy_grenade', name: 'Granada Sagrada', category: 'F9', fKey: 9, type: 'grenade', damage: 100, blastRadius: 96, knockback: 14.0, windFactor: 0.2, bounciness: 0.45, hasFuse: false, description: '¡Aleluya! Detona tras detenerse con cráter gigantesco.', accentColor: '#fef08a' },
+        { id: 'flamethrower', name: 'Lanzallamas', category: 'F9', fKey: 9, type: 'hitscan', damage: 45, blastRadius: 24, knockback: 8.5, windFactor: 0.9, bounciness: 0, isFire: true, description: 'Proyecta un chorro continuo de fuego.', accentColor: '#fb923c' },
+        { id: 'salvation_army', name: 'Ejército Salvación', category: 'F9', fKey: 9, type: 'animal', damage: 65, blastRadius: 56, knockback: 9.0, windFactor: 0, bounciness: 0.3, clusterCount: 4, description: 'Libera panderetas explosivas.', accentColor: '#e11d48' },
+        { id: 'mb_bomb', name: 'Bomba MB', category: 'F9', fKey: 9, type: 'grenade', damage: 85, blastRadius: 80, knockback: 12.0, windFactor: 1.2, bounciness: 0.75, hasFuse: true, description: 'Globo explosivo gigante arrastrado por el viento.', accentColor: '#ec4899' },
+
+        // F10 — CONTAMINACIÓN Y ATAQUES MASIVOS
+        { id: 'petrol_bomb', name: 'Bomba Molotov', category: 'F10', fKey: 10, type: 'projectile', damage: 35, blastRadius: 30, knockback: 5.0, windFactor: 0.4, bounciness: 0, isFire: true, description: 'Explota al impacto dejando llamas persistentes.', accentColor: '#f97316' },
+        { id: 'skunk', name: 'Mofeta', category: 'F10', fKey: 10, type: 'animal', damage: 30, blastRadius: 52, knockback: 4.0, windFactor: 0, bounciness: 0.2, description: 'Camina soltando gas tóxico que envenena.', accentColor: '#84cc16' },
+        { id: 'ming_vase', name: 'Jarrón Ming', category: 'F10', fKey: 10, type: 'deploy', damage: 85, blastRadius: 76, knockback: 11.5, windFactor: 0, bounciness: 0, clusterCount: 6, description: 'Antigüedad que estalla en fragmentos letales.', accentColor: '#06b6d4' },
+        { id: 'french_sheep', name: 'Ovejas Francesas', category: 'F10', fKey: 10, type: 'airstrike', damage: 50, blastRadius: 46, knockback: 8.5, windFactor: 0.5, bounciness: 0.6, needsTarget: true, isFire: true, description: 'Escuadrón aéreo de ovejas incendiarias.', accentColor: '#3b82f6' },
+        { id: 'carpet_bomb', name: 'Bombardeo de Mike', category: 'F10', fKey: 10, type: 'airstrike', damage: 55, blastRadius: 50, knockback: 9.0, windFactor: 0.4, bounciness: 0.5, needsTarget: true, description: 'Alfombra de proyectiles rebotones y explosivos.', accentColor: '#8b5cf6' },
+
+        // F11 — SÚPER ARMAS DE DESTRUCCIÓN GLOBAL
+        { id: 'mad_cows', name: 'Vacas Locas', category: 'F11', fKey: 11, type: 'animal', damage: 65, blastRadius: 58, knockback: 10.0, windFactor: 0, bounciness: 0.3, description: 'Estampida de 3 vacas furiosas que embisten.', accentColor: '#f59e0b' },
+        { id: 'old_woman', name: 'Anciana', category: 'F11', fKey: 11, type: 'animal', damage: 85, blastRadius: 78, knockback: 12.0, windFactor: 0, bounciness: 0.1, description: 'Camina lentamente antes de una detonación colosal.', accentColor: '#c084fc' },
+        { id: 'concrete_donkey', name: 'Burro de Hormigón', category: 'F11', fKey: 11, type: 'super', damage: 110, blastRadius: 72, knockback: 13.0, windFactor: 0, bounciness: 0, needsTarget: true, description: 'Cae del cielo aplastando toda la isla hasta el mar.', accentColor: '#9ca3af' },
+        { id: 'nuclear_test', name: 'Prueba Nuclear', category: 'F11', fKey: 11, type: 'super', damage: 45, blastRadius: 0, knockback: 8.0, windFactor: 0, bounciness: 0, description: 'Sube el nivel del agua y envenena a todos.', accentColor: '#65a30d' },
+        { id: 'armageddon', name: 'Armageddon', category: 'F11', fKey: 11, type: 'super', damage: 60, blastRadius: 56, knockback: 10.0, windFactor: 0.3, bounciness: 0, description: 'Lluvia apocalíptica de 22 meteoritos.', accentColor: '#dc2626' },
+
+        // F12 — COMANDOS DE TURNO Y UTILIDADES
+        { id: 'skip_go', name: 'Pasar Turno', category: 'F12', fKey: 12, type: 'command', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Finaliza el turno actual sin atacar.', accentColor: '#94a3b8' },
+        { id: 'select_worm', name: 'Elegir Gusano', category: 'F12', fKey: 12, type: 'command', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Cambia el control al siguiente gusano vivo.', accentColor: '#38bdf8' },
+        { id: 'freeze', name: 'Congelar', category: 'F12', fKey: 12, type: 'command', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Protege al gusano en hielo (-75% daño recibido).', accentColor: '#67e8f9' },
+        { id: 'patsy_bullet', name: 'Bala Mágica Patsy', category: 'F12', fKey: 12, type: 'projectile', damage: 65, blastRadius: 42, knockback: 9.5, windFactor: 0, bounciness: 0, needsTarget: true, description: 'Bala inteligente que rodea islas hasta el objetivo.', accentColor: '#fbbf24' },
+        { id: 'surrender', name: 'Rendirse', category: 'F12', fKey: 12, type: 'command', damage: 0, blastRadius: 0, knockback: 0, windFactor: 0, bounciness: 0, description: 'Ondea la bandera blanca y abandona la partida.', accentColor: '#f87171' }
+      ];
+
+      const SCHEMES = {
+        classic: {
+          id: 'classic',
+          name: 'Clásico Armageddon',
+          description: '150 HP · 45s por turno · Arsenal balanceado + cajas en paracaídas',
+          initialHp: 150,
+          turnTime: 45,
+          roundTime: 300,
+          retreatTime: 4,
+          crateChance: 0.65,
+          waterRisePerTurn: 14,
+          infiniteAmmo: false,
+          artilleryMode: false,
+          minesCount: 4,
+          barrelsCount: 3
+        },
+        full_wormage: {
+          id: 'full_wormage',
+          name: 'The Full Wormage',
+          description: '200 HP · ¡Todas las armas y Súper Armas con munición infinita!',
+          initialHp: 200,
+          turnTime: 35,
+          roundTime: 360,
+          retreatTime: 4,
+          crateChance: 0.85,
+          waterRisePerTurn: 18,
+          infiniteAmmo: true,
+          artilleryMode: false,
+          minesCount: 6,
+          barrelsCount: 4
+        },
+        sudden_death: {
+          id: 'sudden_death',
+          name: 'Muerte Súbita Rápida',
+          description: '100 HP · 30s por turno · El agua sube 12 px desde el primer turno',
+          initialHp: 100,
+          turnTime: 30,
+          roundTime: 1,
+          retreatTime: 3,
+          crateChance: 0.75,
+          waterRisePerTurn: 12,
+          infiniteAmmo: false,
+          artilleryMode: false,
+          minesCount: 5,
+          barrelsCount: 4
+        },
+        artillery: {
+          id: 'artillery',
+          name: 'Artillería Pura',
+          description: '150 HP · Gusanos anclados sin caminar · Puntería y viento puro',
+          initialHp: 150,
+          turnTime: 35,
+          roundTime: 240,
+          retreatTime: 2,
+          crateChance: 0.5,
+          waterRisePerTurn: 10,
+          infiniteAmmo: false,
+          artilleryMode: true,
+          minesCount: 0,
+          barrelsCount: 3
+        }
+      };
+
+      const BIOMES = {
+        cheese: {
+          name: 'Queso Suizo (Referencia)',
+          subtitle: 'Dos islas de queso dorado bajo cielo nocturno estrellado',
+          skyTop: '#12163b',
+          skyMid: '#1f265c',
+          skyBot: '#2e377a',
+          landBase: '#df9b0c',
+          landHighlight: '#ffd22b',
+          landShadow: '#854602',
+          craterRim: '#4a2502',
+          waterTop: '#7686f2',
+          waterMid: '#4856c4',
+          waterDeep: '#242d78',
+          hasStars: true
+        },
+        forest: {
+          name: 'Bosque Clásico',
+          subtitle: 'Colinas verdes con tierra fértil y rocas subterráneas',
+          skyTop: '#1e3a8a',
+          skyMid: '#3b82f6',
+          skyBot: '#93c5fd',
+          landBase: '#7c4722',
+          landHighlight: '#36c928',
+          landShadow: '#4a2810',
+          craterRim: '#2e1808',
+          waterTop: '#38bdf8',
+          waterMid: '#0284c7',
+          waterDeep: '#0c4a6e',
+          hasStars: false
+        },
+        desert: {
+          name: 'Desierto Cañón',
+          subtitle: 'Dunas doradas y mesetas rojizas al atardecer',
+          skyTop: '#4c1d95',
+          skyMid: '#be185d',
+          skyBot: '#fb923c',
+          landBase: '#d97706',
+          landHighlight: '#fcd34d',
+          landShadow: '#92400e',
+          craterRim: '#451a03',
+          waterTop: '#2dd4bf',
+          waterMid: '#0d9488',
+          waterDeep: '#115e59',
+          hasStars: true
+        },
+        space: {
+          name: 'Cráter Lunar',
+          subtitle: 'Asteroides gris plata en el espacio profundo',
+          skyTop: '#050714',
+          skyMid: '#0f172a',
+          skyBot: '#1e1b4b',
+          landBase: '#64748b',
+          landHighlight: '#cbd5e1',
+          landShadow: '#334155',
+          craterRim: '#1e293b',
+          waterTop: '#a855f7',
+          waterMid: '#7e22ce',
+          waterDeep: '#3b0764',
+          hasStars: true
+        },
+        hell: {
+          name: 'Inframundo',
+          subtitle: 'Roca volcánica sobre un mar de magma incandescente',
+          skyTop: '#1f0505',
+          skyMid: '#450a0a',
+          skyBot: '#7f1d1d',
+          landBase: '#3f3f46',
+          landHighlight: '#ef4444',
+          landShadow: '#18181b',
+          craterRim: '#09090b',
+          waterTop: '#fde047',
+          waterMid: '#f97316',
+          waterDeep: '#b91c1c',
+          hasStars: false
+        }
+      };
+
+      const DEFAULT_TEAMS = [
+        {
+          id: 'team-1',
+          name: 'Escuadrón Rojo',
+          color: '#ff6b6b',
+          controller: 'human',
+          worms: ['Jarus', 'Stregge', 'Nanny', 'Sandra', 'Muzard']
+        },
+        {
+          id: 'team-2',
+          name: 'CPU 1',
+          color: '#54a0ff',
+          controller: 'ai_normal',
+          worms: ['Rar1', 'Buzz', 'Fluta', 'Morm 1', 'Morm 2']
+        },
+        {
+          id: 'team-3',
+          name: 'CPU 2',
+          color: '#5cd85a',
+          controller: 'ai_easy',
+          worms: ['Boggy B', 'Spadge', 'Clagnut', 'Titch', 'Gomez']
+        }
+      ];
+
+      // ======================================================================
+      // MOTOR DE AUDIO PROCEDURAL (WEB AUDIO API)
+      // ======================================================================
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.muted = false;
+        }
+        ensureCtx() {
+          if (this.muted) return null;
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+          return this.ctx;
+        }
+        playExplosion(intensity = 1.0) {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const duration = 0.55 + intensity * 0.35;
+          const bufferSize = Math.floor(ctx.sampleRate * duration);
+          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * (0.18 + intensity * 0.12)));
+          }
+          const noise = ctx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(520 * intensity, now);
+          filter.frequency.exponentialRampToValueAtTime(65, now + duration);
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(Math.min(0.65, 0.38 * intensity), now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          noise.start(now);
+
+          const osc = ctx.createOscillator();
+          const oscGain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(110, now);
+          osc.frequency.exponentialRampToValueAtTime(28, now + 0.35);
+          oscGain.gain.setValueAtTime(0.4, now);
+          oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.36);
+          osc.connect(oscGain);
+          oscGain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.37);
+        }
+        playLaunch() {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(560, now + 0.18);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.21);
+        }
+        playChargeTick(powerRatio) {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(240 + powerRatio * 680, now);
+          gain.gain.setValueAtTime(0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        }
+        playBounce() {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(520, now);
+          osc.frequency.exponentialRampToValueAtTime(290, now + 0.07);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.085);
+        }
+        playSplash() {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const bufferSize = Math.floor(ctx.sampleRate * 0.45);
+          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+          const data = buffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.14));
+          }
+          const noise = ctx.createBufferSource();
+          noise.buffer = buffer;
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(950, now);
+          filter.frequency.exponentialRampToValueAtTime(320, now + 0.42);
+          const gain = ctx.createGain();
+          gain.gain.setValueAtTime(0.32, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.44);
+          noise.connect(filter);
+          filter.connect(gain);
+          gain.connect(ctx.destination);
+          noise.start(now);
+        }
+        playWormVoice(kind) {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          if (kind === 'jump') {
+            osc.frequency.setValueAtTime(420, now);
+            osc.frequency.exponentialRampToValueAtTime(840, now + 0.11);
+            gain.gain.setValueAtTime(0.14, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+          } else if (kind === 'hurt') {
+            osc.frequency.setValueAtTime(760, now);
+            osc.frequency.exponentialRampToValueAtTime(380, now + 0.18);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+          } else if (kind === 'collect') {
+            osc.frequency.setValueAtTime(587.33, now);
+            osc.frequency.setValueAtTime(880, now + 0.08);
+            gain.gain.setValueAtTime(0.16, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          } else {
+            osc.frequency.setValueAtTime(660, now);
+            osc.frequency.setValueAtTime(784, now + 0.06);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+          }
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.24);
+        }
+        playHallelujah() {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const notes = [
+            { freq: 587.33, start: 0.0, dur: 0.22 },
+            { freq: 783.99, start: 0.24, dur: 0.18 },
+            { freq: 739.99, start: 0.44, dur: 0.18 },
+            { freq: 783.99, start: 0.64, dur: 0.45 }
+          ];
+          notes.forEach((n) => {
+            [1, 0.5, 1.25].forEach((mult) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sawtooth';
+              osc.frequency.setValueAtTime(n.freq * mult, now + n.start);
+              const filter = ctx.createBiquadFilter();
+              filter.type = 'lowpass';
+              filter.frequency.setValueAtTime(1400, now + n.start);
+              gain.gain.setValueAtTime(0.07, now + n.start);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + n.start + n.dur);
+              osc.connect(filter);
+              filter.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start(now + n.start);
+              osc.stop(now + n.start + n.dur + 0.02);
+            });
+          });
+        }
+        playFanfare() {
+          const ctx = this.ensureCtx();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const seq = [
+            { f: 523.25, t: 0, d: 0.14 },
+            { f: 659.25, t: 0.15, d: 0.14 },
+            { f: 783.99, t: 0.3, d: 0.14 },
+            { f: 1046.5, t: 0.46, d: 0.45 }
+          ];
+          seq.forEach((n) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(n.f, now + n.t);
+            gain.gain.setValueAtTime(0.2, now + n.t);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + n.t + n.d);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + n.t);
+            osc.stop(now + n.t + n.d + 0.02);
+          });
+        }
+      }
+
+      // ======================================================================
+      // MOTOR DE TERRENO DESTRUIBLE (MÁSCARA BINARIA + OFFSCREENCANVAS)
+      // ======================================================================
+      class DestructibleTerrain {
+        constructor(width, height, biome) {
+          this.width = width;
+          this.height = height;
+          this.biome = biome;
+          this.mask = new Uint8Array(width * height); // 0=aire, 1=destruible, 2=acero
+          this.canvas = document.createElement('canvas');
+          this.canvas.width = width;
+          this.canvas.height = height;
+          this.ctx = this.canvas.getContext('2d');
+        }
+        isSolid(x, y) {
+          const ix = Math.floor(x);
+          const iy = Math.floor(y);
+          if (ix < 0 || ix >= this.width || iy < 0 || iy >= this.height) return false;
+          return this.mask[iy * this.width + ix] !== 0;
+        }
+        generate(seed, biome) {
+          this.biome = biome;
+          this.mask.fill(0);
+          const cfg = BIOMES[biome];
+          const ctx = this.ctx;
+          ctx.clearRect(0, 0, this.width, this.height);
+
+          let s = seed % 2147483647;
+          if (s <= 0) s += 2147483646;
+          const rand = () => {
+            s = (s * 16807) % 2147483647;
+            return (s - 1) / 2147483646;
+          };
+
+          ctx.save();
+          ctx.beginPath();
+
+          // Isla Izquierda (fiel a la referencia de dos islas con abismo central)
+          const leftPoints = [
+            [55, 690], [75, 480], [135, 360], [255, 420], [270, 325],
+            [175, 225], [230, 175], [385, 195], [525, 275], [560, 315],
+            [430, 365], [390, 445], [460, 465], [575, 440], [690, 460],
+            [795, 455], [815, 570], [790, 690]
+          ];
+          ctx.moveTo(leftPoints[0][0], leftPoints[0][1]);
+          for (let i = 1; i < leftPoints.length; i++) {
+            const px = leftPoints[i][0] + (rand() - 0.5) * 26;
+            const py = leftPoints[i][1] + (rand() - 0.5) * 22;
+            const prev = leftPoints[i - 1];
+            ctx.quadraticCurveTo(prev[0], prev[1], (prev[0] + px) * 0.5, (prev[1] + py) * 0.5);
+          }
+          ctx.closePath();
+
+          // Isla Derecha
+          const rightPoints = [
+            [1045, 690], [1015, 555], [945, 485], [1020, 425], [1155, 395],
+            [1275, 310], [1385, 320], [1425, 415], [1525, 365], [1610, 290],
+            [1765, 315], [1825, 415], [1880, 455], [1830, 540], [1835, 690]
+          ];
+          ctx.moveTo(rightPoints[0][0], rightPoints[0][1]);
+          for (let i = 1; i < rightPoints.length; i++) {
+            const px = rightPoints[i][0] + (rand() - 0.5) * 26;
+            const py = rightPoints[i][1] + (rand() - 0.5) * 22;
+            const prev = rightPoints[i - 1];
+            ctx.quadraticCurveTo(prev[0], prev[1], (prev[0] + px) * 0.5, (prev[1] + py) * 0.5);
+          }
+          ctx.closePath();
+
+          const grad = ctx.createLinearGradient(0, 180, 0, 690);
+          grad.addColorStop(0, cfg.landHighlight);
+          grad.addColorStop(0.25, cfg.landBase);
+          grad.addColorStop(1, cfg.landShadow);
+          ctx.fillStyle = grad;
+          ctx.fill();
+
+          ctx.save();
+          ctx.clip();
+          if (biome === 'cheese') {
+            for (let i = 0; i < 95; i++) {
+              const hx = 80 + rand() * 1780;
+              const hy = 200 + rand() * 470;
+              const hr = 14 + rand() * 24;
+              ctx.beginPath();
+              ctx.ellipse(hx, hy, hr, hr * 0.78, (rand() - 0.5) * 0.6, 0, Math.PI * 2);
+              ctx.fillStyle = '#995704';
+              ctx.fill();
+              ctx.beginPath();
+              ctx.ellipse(hx + 2, hy + 4, hr * 0.85, hr * 0.62, 0, 0, Math.PI * 2);
+              ctx.fillStyle = '#bd7307';
+              ctx.fill();
+            }
+          } else {
+            for (let i = 0; i < 140; i++) {
+              const rx = 60 + rand() * 1800;
+              const ry = 200 + rand() * 480;
+              const rr = 8 + rand() * 22;
+              ctx.beginPath();
+              ctx.arc(rx, ry, rr, 0, Math.PI * 2);
+              ctx.fillStyle = i % 2 === 0 ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.08)';
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+
+          ctx.lineWidth = 6;
+          ctx.strokeStyle = cfg.landHighlight;
+          ctx.stroke();
+          ctx.lineWidth = 2.5;
+          ctx.strokeStyle = '#1f1002';
+          ctx.stroke();
+          ctx.restore();
+
+          const imgData = ctx.getImageData(0, 0, this.width, this.height).data;
+          for (let y = 0; y < this.height; y++) {
+            for (let x = 0; x < this.width; x++) {
+              const alpha = imgData[(y * this.width + x) * 4 + 3];
+              this.mask[y * this.width + x] = alpha > 120 ? 1 : 0;
+            }
+          }
+        }
+        destroyCircle(cx, cy, radius) {
+          const r = Math.ceil(radius);
+          const rSq = radius * radius;
+          const minX = Math.max(0, Math.floor(cx - r));
+          const maxX = Math.min(this.width - 1, Math.ceil(cx + r));
+          const minY = Math.max(0, Math.floor(cy - r));
+          const maxY = Math.min(this.height - 1, Math.ceil(cy + r));
+
+          for (let y = minY; y <= maxY; y++) {
+            const dy = y - cy;
+            const dySq = dy * dy;
+            const rowOffset = y * this.width;
+            for (let x = minX; x <= maxX; x++) {
+              const dx = x - cx;
+              if (dx * dx + dySq <= rSq) {
+                const idx = rowOffset + x;
+                if (this.mask[idx] === 1) this.mask[idx] = 0;
+              }
+            }
+          }
+
+          const ctx = this.ctx;
+          ctx.save();
+          ctx.globalCompositeOperation = 'source-atop';
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius + 4.5, 0, Math.PI * 2);
+          ctx.fillStyle = BIOMES[this.biome].craterRim;
+          ctx.fill();
+
+          ctx.globalCompositeOperation = 'destination-out';
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+        addGirder(cx, cy, angleRad, length = 96, thickness = 12) {
+          const cos = Math.cos(angleRad);
+          const sin = Math.sin(angleRad);
+          const halfL = length / 2;
+          const halfT = thickness / 2;
+          const minX = Math.max(0, Math.floor(cx - length));
+          const maxX = Math.min(this.width - 1, Math.ceil(cx + length));
+          const minY = Math.max(0, Math.floor(cy - length));
+          const maxY = Math.min(this.height - 1, Math.ceil(cy + length));
+
+          for (let y = minY; y <= maxY; y++) {
+            for (let x = minX; x <= maxX; x++) {
+              const dx = x - cx;
+              const dy = y - cy;
+              const localX = dx * cos + dy * sin;
+              const localY = -dx * sin + dy * cos;
+              if (Math.abs(localX) <= halfL && Math.abs(localY) <= halfT) {
+                this.mask[y * this.width + x] = 2;
+              }
+            }
+          }
+
+          const ctx = this.ctx;
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.rotate(angleRad);
+          ctx.fillStyle = '#64748b';
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-halfL, -halfT, length, thickness);
+          ctx.strokeRect(-halfL, -halfT, length, thickness);
+          ctx.strokeStyle = '#cbd5e1';
+          ctx.lineWidth = 1.5;
+          for (let gx = -halfL + 10; gx < halfL - 6; gx += 16) {
+            ctx.beginPath();
+            ctx.moveTo(gx, -halfT + 2);
+            ctx.lineTo(gx + 8, halfT - 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        findSpawnY(x) {
+          const ix = Math.max(20, Math.min(this.width - 20, Math.floor(x)));
+          for (let y = 80; y < BASE_WATER_Y - 25; y++) {
+            if (!this.isSolid(ix, y - 1) && !this.isSolid(ix, y - 8) && this.isSolid(ix, y)) {
+              return y - 1;
+            }
+          }
+          return null;
+        }
+      }
+
+      // ======================================================================
+      // GENERADOR DEL LOGOTIPO VECTORIAL WORMS ARMAGEDDON
+      // ======================================================================
+      function createLogoSvg(compact) {
+        const cls = compact
+          ? 'w-[320px] sm:w-[410px] h-auto drop-shadow-[0_6px_12px_rgba(0,0,0,0.85)]'
+          : 'w-[340px] sm:w-[540px] md:w-[600px] h-auto drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)]';
+        return `
+          <svg viewBox="0 0 640 195" class="${cls}">
+            <defs>
+              <linearGradient id="wormsGrad_${compact ? 'c' : 'm'}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ffe600" />
+                <stop offset="50%" stop-color="#ff9900" />
+                <stop offset="100%" stop-color="#e63900" />
+              </linearGradient>
+              <linearGradient id="armaGrad_${compact ? 'c' : 'm'}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fff033" />
+                <stop offset="55%" stop-color="#ff7b00" />
+                <stop offset="100%" stop-color="#d91e00" />
+              </linearGradient>
+            </defs>
+            <g transform="rotate(-2.5 320 65)">
+              <rect x="135" y="12" width="370" height="14" rx="4" fill="#dc2626" stroke="#0f0a0a" stroke-width="4" />
+              <rect x="135" y="96" width="370" height="14" rx="4" fill="#dc2626" stroke="#0f0a0a" stroke-width="4" />
+              <text x="142" y="88" font-family="Impact, 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="url(#wormsGrad_${compact ? 'c' : 'm'})" stroke="#0f0a0a" stroke-width="8" paint-order="stroke">W</text>
+              <text x="306" y="88" font-family="Impact, 'Arial Black', sans-serif" font-size="82" font-weight="900" fill="url(#wormsGrad_${compact ? 'c' : 'm'})" stroke="#0f0a0a" stroke-width="8" paint-order="stroke" letter-spacing="3">RMS</text>
+              <g transform="translate(262, 58)">
+                <rect x="-10" y="-44" width="20" height="12" rx="3" fill="#64748b" stroke="#0f0a0a" stroke-width="3.5" />
+                <path d="M 8 -40 Q 26 -42 28 -18" fill="none" stroke="#94a3b8" stroke-width="5" stroke-linecap="round" />
+                <circle cx="-15" cy="-36" r="7" fill="none" stroke="#cbd5e1" stroke-width="3" />
+                <ellipse cx="0" cy="2" rx="34" ry="39" fill="#5b7035" stroke="#0f0a0a" stroke-width="4.5" />
+                <path d="M -32 -8 L 32 -8 M -33 10 L 33 10 M -12 -35 L -12 39 M 12 -35 L 12 39" stroke="#36441d" stroke-width="3" />
+                <path d="M -12 16 C -14 -8, 12 -10, 10 14 C 9 22, -10 22, -12 16 Z" fill="#f794bd" stroke="#0f0a0a" stroke-width="3" />
+                <circle cx="-3" cy="-5" r="7" fill="#ffffff" stroke="#0f0a0a" stroke-width="2.5" />
+                <circle cx="8" cy="-5" r="7" fill="#ffffff" stroke="#0f0a0a" stroke-width="2.5" />
+                <circle cx="-1" cy="-5" r="2.5" fill="#0f0a0a" />
+                <circle cx="9" cy="-5" r="2.5" fill="#0f0a0a" />
+                <path d="M -5 7 Q 3 14 9 6" fill="none" stroke="#0f0a0a" stroke-width="2.5" stroke-linecap="round" />
+              </g>
+            </g>
+            <text x="320" y="176" text-anchor="middle" font-family="Impact, 'Arial Black', sans-serif" font-size="74" font-weight="900" fill="url(#armaGrad_${compact ? 'c' : 'm'})" stroke="#0f0a0a" stroke-width="9" paint-order="stroke" letter-spacing="3">
+              ARMAGEDDON
+            </text>
+          </svg>
+        `;
+      }
+
+      // ======================================================================
+      // ESTADO GLOBAL DE LA APLICACIÓN
+      // ======================================================================
+      let currentScreen = 'menu';
+      let selectedBiome = 'cheese';
+      let selectedScheme = 'classic';
+      let mapSeed = 19990129;
+      let teamsConfig = (() => {
+        try {
+          const saved = localStorage.getItem('wa_html5_teams_v1');
+          if (saved) return JSON.parse(saved);
+        } catch (e) {}
+        return JSON.parse(JSON.stringify(DEFAULT_TEAMS));
+      })();
+
+      let paused = false;
+      let arsenalOpen = false;
+      let showLogoOverlay = true;
+      const sound = new SoundEngine();
+      let terrain = null;
+      let engine = null;
+
+      // Elementos del DOM
+      const screens = {
+        menu: document.getElementById('screen-menu'),
+        lobby: document.getElementById('screen-lobby'),
+        playing: document.getElementById('screen-playing')
+      };
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+
+      function switchScreen(name) {
+        currentScreen = name;
+        Object.keys(screens).forEach((k) => {
+          screens[k].classList.toggle('hidden', k !== name);
+        });
+        if (name === 'playing') {
+          resizeCanvas();
+        } else if (name === 'lobby') {
+          renderLobby();
+        }
+      }
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+
+      let toastTimeout = null;
+      function showToast(msg) {
+        const el = document.getElementById('toast-banner');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => el.classList.add('hidden'), 2600);
+      }
+
+      function saveTeamsStorage() {
+        try {
+          localStorage.setItem('wa_html5_teams_v1', JSON.stringify(teamsConfig));
+        } catch (e) {}
+      }
+
+      // ======================================================================
+      // RENDERIZADO DEL LOBBY DE CONFIGURACIÓN
+      // ======================================================================
+      function renderLobby() {
+        // Esquemas
+        const schemesList = document.getElementById('lobby-schemes-list');
+        schemesList.innerHTML = '';
+        Object.keys(SCHEMES).forEach((sKey) => {
+          const sc = SCHEMES[sKey];
+          const active = selectedScheme === sKey;
+          const btn = document.createElement('button');
+          btn.className = `text-left p-3 rounded-xl border transition cursor-pointer ${
+            active
+              ? 'bg-amber-500/20 border-amber-400 text-white'
+              : 'bg-slate-800/70 border-white/10 text-slate-300 hover:border-white/30'
+          }`;
+          btn.innerHTML = `<div class="font-bold text-sm">${sc.name}</div><div class="text-xs text-slate-400 mt-0.5">${sc.description}</div>`;
+          btn.onclick = () => {
+            selectedScheme = sKey;
+            renderLobby();
+          };
+          schemesList.appendChild(btn);
+        });
+
+        // Biomas
+        const biomesList = document.getElementById('lobby-biomes-list');
+        biomesList.innerHTML = '';
+        Object.keys(BIOMES).forEach((bKey) => {
+          const bm = BIOMES[bKey];
+          const active = selectedBiome === bKey;
+          const btn = document.createElement('button');
+          btn.className = `text-left p-3 rounded-xl border flex items-center justify-between transition cursor-pointer ${
+            active
+              ? 'bg-indigo-500/25 border-indigo-400 text-white'
+              : 'bg-slate-800/70 border-white/10 text-slate-300 hover:border-white/30'
+          }`;
+          btn.innerHTML = `
+            <div>
+              <div class="font-bold text-sm">${bm.name}</div>
+              <div class="text-xs text-slate-400">${bm.subtitle}</div>
+            </div>
+            <span class="w-6 h-6 rounded-full border-2 border-white/40 shrink-0" style="background:${bm.landHighlight}"></span>
+          `;
+          btn.onclick = () => {
+            selectedBiome = bKey;
+            renderLobby();
+          };
+          biomesList.appendChild(btn);
+        });
+
+        document.getElementById('lobby-seed-label').textContent = `Semilla: #${mapSeed}`;
+        document.getElementById('lobby-teams-title').textContent = `3. Escuadras Participantes (${teamsConfig.length} / 4)`;
+        document.getElementById('btn-add-team').classList.toggle('hidden', teamsConfig.length >= 4);
+
+        // Equipos
+        const teamsGrid = document.getElementById('lobby-teams-grid');
+        teamsGrid.innerHTML = '';
+        teamsConfig.forEach((team, tIdx) => {
+          const card = document.createElement('div');
+          card.className = 'p-4 rounded-2xl bg-slate-800/85 border-2 flex flex-col gap-3';
+          card.style.borderColor = team.color;
+
+          const topRow = document.createElement('div');
+          topRow.className = 'flex items-center gap-2';
+
+          const nameInput = document.createElement('input');
+          nameInput.type = 'text';
+          nameInput.value = team.name;
+          nameInput.maxLength = 17;
+          nameInput.style.color = team.color;
+          nameInput.className = 'bg-slate-950/85 border border-white/20 rounded-lg px-2.5 py-1.5 font-bold text-sm w-full';
+          nameInput.oninput = (e) => {
+            teamsConfig[tIdx].name = e.target.value;
+            saveTeamsStorage();
+          };
+          topRow.appendChild(nameInput);
+
+          if (teamsConfig.length > 2) {
+            const delBtn = document.createElement('button');
+            delBtn.textContent = '✕';
+            delBtn.className = 'px-2.5 py-1.5 rounded-lg bg-rose-950 text-rose-300 hover:bg-rose-800 font-bold text-xs cursor-pointer';
+            delBtn.onclick = () => {
+              teamsConfig.splice(tIdx, 1);
+              saveTeamsStorage();
+              renderLobby();
+            };
+            topRow.appendChild(delBtn);
+          }
+          card.appendChild(topRow);
+
+          const ctrlRow = document.createElement('div');
+          ctrlRow.className = 'flex items-center gap-2 text-xs';
+          ctrlRow.innerHTML = `<span class="text-slate-400">Control:</span>`;
+          const select = document.createElement('select');
+          select.className = 'bg-slate-950 border border-white/20 rounded-lg px-2 py-1 text-white font-semibold flex-1';
+          select.innerHTML = `
+            <option value="human" ${team.controller === 'human' ? 'selected' : ''}>Jugador Humano (Teclado/Ratón)</option>
+            <option value="ai_easy" ${team.controller === 'ai_easy' ? 'selected' : ''}>IA — Nivel Fácil</option>
+            <option value="ai_normal" ${team.controller === 'ai_normal' ? 'selected' : ''}>IA — Nivel Normal</option>
+            <option value="ai_hard" ${team.controller === 'ai_hard' ? 'selected' : ''}>IA — Nivel Difícil</option>
+          `;
+          select.onchange = (e) => {
+            teamsConfig[tIdx].controller = e.target.value;
+            saveTeamsStorage();
+          };
+          ctrlRow.appendChild(select);
+          card.appendChild(ctrlRow);
+
+          const wormsGrid = document.createElement('div');
+          wormsGrid.className = 'grid grid-cols-2 gap-1.5';
+          team.worms.forEach((wName, wIdx) => {
+            const wIn = document.createElement('input');
+            wIn.type = 'text';
+            wIn.value = wName;
+            wIn.maxLength = 14;
+            wIn.className = 'bg-slate-900/90 border border-white/10 rounded px-2 py-1 text-xs text-slate-100';
+            wIn.oninput = (e) => {
+              teamsConfig[tIdx].worms[wIdx] = e.target.value;
+              saveTeamsStorage();
+            };
+            wormsGrid.appendChild(wIn);
+          });
+          card.appendChild(wormsGrid);
+          teamsGrid.appendChild(card);
+        });
+      }
+
+      // ======================================================================
+      // INICIALIZACIÓN DE PARTIDA (MATCH ENGINE)
+      // ======================================================================
+      function startNewMatch(customSeed, customBiome, customScheme) {
+        const biomeId = customBiome || selectedBiome;
+        const schemeId = customScheme || selectedScheme;
+        const seed = customSeed || mapSeed;
+        selectedBiome = biomeId;
+        selectedScheme = schemeId;
+        mapSeed = seed;
+
+        const scheme = SCHEMES[schemeId];
+        terrain = new DestructibleTerrain(WORLD_W, WORLD_H, biomeId);
+        terrain.generate(seed, biomeId);
+
+        const stars = Array.from({ length: 75 }, (_, i) => ({
+          x: (i * 257 + seed) % WORLD_W,
+          y: ((i * 131 + seed * 3) % 360) + 15,
+          size: (i % 3) + 1.2,
+          twinkle: i * 0.7
+        }));
+
+        const clouds = Array.from({ length: 12 }, (_, i) => ({
+          x: (i * 185) % WORLD_W,
+          y: 28 + (i % 4) * 26,
+          scale: 0.75 + (i % 3) * 0.25,
+          speed: 0.15 + (i % 3) * 0.08
+        }));
+
+        const candidateXs = [
+          195, 290, 380, 490, 610, 725, 1065, 1185, 1295, 1410, 1545, 1680, 1775,
+          240, 440, 660, 1120, 1340, 1615, 1730
+        ];
+        for (let i = candidateXs.length - 1; i > 0; i--) {
+          const j = (seed + i * 37) % (i + 1);
+          [candidateXs[i], candidateXs[j]] = [candidateXs[j], candidateXs[i]];
+        }
+
+        const worms = [];
+        let spawnIdx = 0;
+        teamsConfig.forEach((team, tIdx) => {
+          team.worms.forEach((wName, wIdx) => {
+            const sx = candidateXs[spawnIdx % candidateXs.length] + ((spawnIdx * 13) % 24) - 12;
+            spawnIdx++;
+            const sy = terrain.findSpawnY(sx) || 300;
+            worms.push({
+              id: `w-${tIdx}-${wIdx}`,
+              teamIndex: tIdx,
+              name: wName || `Gusano ${wIdx + 1}`,
+              x: sx,
+              y: sy,
+              vx: 0,
+              vy: 0,
+              hp: scheme.initialHp,
+              maxHp: scheme.initialHp,
+              facing: sx < WORLD_W / 2 ? 1 : -1,
+              aimAngle: -0.25,
+              state: 'standing',
+              walkFrame: 0,
+              alive: true,
+              poisoned: false,
+              frozen: false,
+              parachuteOpen: false,
+              hurtTimer: 0,
+              fallPeakY: sy
+            });
+          });
+        });
+
+        const hazards = [];
+        for (let m = 0; m < scheme.minesCount; m++) {
+          const mx = 220 + ((m * 310 + seed) % 1480);
+          const my = terrain.findSpawnY(mx);
+          if (my !== null) {
+            hazards.push({ id: `mine-${m}`, kind: 'mine', x: mx, y: my, triggered: false, fuseTicks: 150 });
+          }
+        }
+        for (let b = 0; b < scheme.barrelsCount; b++) {
+          const bx = 300 + ((b * 420 + seed * 2) % 1320);
+          const by = terrain.findSpawnY(bx);
+          if (by !== null) {
+            hazards.push({ id: `barrel-${b}`, kind: 'barrel', x: bx, y: by, triggered: false, fuseTicks: 0 });
+          }
+        }
+
+        const ammoByTeam = teamsConfig.map(() => {
+          const inv = {};
+          WEAPONS_CATALOG.forEach((w) => {
+            if (scheme.infiniteAmmo) inv[w.id] = 99;
+            else if (w.fKey === 11 || w.id === 'holy_grenade' || w.id === 'super_banana' || w.id === 'mb_bomb') inv[w.id] = 1;
+            else if (w.fKey === 9 || w.fKey === 10 || w.fKey === 6) inv[w.id] = 2;
+            else if (w.fKey === 5 || w.fKey === 8 || w.id === 'banana_bomb' || w.id === 'homing_missile') inv[w.id] = 3;
+            else inv[w.id] = 99;
+          });
+          return inv;
+        });
+
+        const firstWorm = worms[0];
+        const initialWind = Math.floor(Math.sin(seed) * 0.7 * 85);
+
+        engine = {
+          worms,
+          projectiles: [],
+          crates: [],
+          hazards,
+          flames: [],
+          particles: [],
+          floatingTexts: [],
+          gravestones: [],
+          rope: { active: false, anchorX: 0, anchorY: 0, length: 0 },
+          camera: {
+            x: Math.max(0, Math.min(WORLD_W - 1280, (firstWorm ? firstWorm.x : 600) - 640)),
+            y: 0,
+            zoom: 1,
+            shake: 0,
+            manualPanTimer: 0
+          },
+          keys: new Set(),
+          mouse: { dragging: false, lastX: 0, lastY: 0 },
+          turn: {
+            teamIndex: 0,
+            teamWormCursors: teamsConfig.map(() => 0),
+            activeWormId: firstWorm ? firstWorm.id : '',
+            phase: 'aim',
+            ticksLeft: scheme.turnTime * TICK_RATE,
+            roundTicksLeft: scheme.roundTime * TICK_RATE,
+            wind: initialWind,
+            selectedWeaponId: 'bazooka',
+            fuseSeconds: 3,
+            girderAngle: 0,
+            charging: false,
+            chargeTicks: 0,
+            shotsRemaining: 1,
+            jetpackFuel: 100,
+            lowGravity: false,
+            fastWalk: false,
+            laserSight: false,
+            doubleDamage: false,
+            ammoByTeam,
+            targetPoint: null,
+            aiThinkingTicks: 40,
+            aiPlan: null
+          },
+          waterY: BASE_WATER_Y,
+          waterWavePhase: 0,
+          suddenDeath: scheme.roundTime <= 1,
+          killFeed: `Turno de ${teamsConfig[0].name} (${firstWorm ? firstWorm.name : ''})`,
+          clouds,
+          stars
+        };
+
+        paused = false;
+        arsenalOpen = false;
+        document.getElementById('modal-pause').classList.add('hidden');
+        document.getElementById('modal-gameover').classList.add('hidden');
+        document.getElementById('modal-arsenal').classList.add('hidden');
+        switchScreen('playing');
+        sound.playWormVoice('turn');
+      }
+
+      // ======================================================================
+      // EXPLOSIONES, DAÑO Y EMPUJE (KNOCKBACK)
+      // ======================================================================
+      function spawnExplosion(x, y, baseRadius, baseDamage, baseKnockback, ownerTeam, isFire = false) {
+        if (!engine || !terrain) return;
+        const mult = engine.turn.doubleDamage && ownerTeam === engine.turn.teamIndex ? 1.5 : 1.0;
+        const dmgMult = engine.turn.doubleDamage && ownerTeam === engine.turn.teamIndex ? 2.0 : 1.0;
+        const radius = baseRadius * mult;
+        const damage = Math.round(baseDamage * dmgMult);
+        const knockback = baseKnockback * mult;
+
+        if (radius > 0) terrain.destroyCircle(x, y, radius);
+        engine.camera.shake = Math.min(24, engine.camera.shake + radius * 0.32);
+        sound.playExplosion(Math.max(0.5, radius / 52));
+
+        engine.particles.push({
+          x, y, vx: 0, vy: 0, size: radius * 1.25,
+          color: '#fff7ed', life: 14, maxLife: 14, gravity: 0, kind: 'ring'
+        });
+
+        const sparkCount = Math.min(36, Math.floor(radius * 0.65));
+        for (let i = 0; i < sparkCount; i++) {
+          const ang = (Math.PI * 2 * i) / sparkCount + (Math.random() - 0.5) * 0.3;
+          const spd = 2.5 + Math.random() * (radius * 0.16);
+          engine.particles.push({
+            x, y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 1.5,
+            size: 3 + Math.random() * 4,
+            color: i % 3 === 0 ? '#fef08a' : i % 3 === 1 ? '#f97316' : '#ef4444',
+            life: 24 + Math.floor(Math.random() * 18),
+            maxLife: 42,
+            gravity: 0.16,
+            kind: 'spark'
+          });
+        }
+
+        const smokeCount = Math.min(18, Math.floor(radius * 0.35));
+        for (let i = 0; i < smokeCount; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = Math.random() * radius * 0.65;
+          engine.particles.push({
+            x: x + Math.cos(ang) * dist,
+            y: y + Math.sin(ang) * dist,
+            vx: (Math.random() - 0.5) * 1.4,
+            vy: -0.6 - Math.random() * 1.4,
+            size: 10 + Math.random() * 14,
+            color: i % 2 === 0 ? 'rgba(40,40,48,0.82)' : 'rgba(90,90,100,0.72)',
+            life: 32 + Math.floor(Math.random() * 20),
+            maxLife: 52,
+            gravity: -0.02,
+            kind: 'smoke'
+          });
+        }
+
+        const debrisCount = Math.min(14, Math.floor(radius * 0.25));
+        const debrisColor = BIOMES[terrain.biome].landHighlight;
+        for (let i = 0; i < debrisCount; i++) {
+          const ang = -Math.PI * Math.random();
+          const spd = 3 + Math.random() * 6;
+          engine.particles.push({
+            x, y,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 2,
+            size: 4 + Math.random() * 4,
+            color: debrisColor,
+            life: 40,
+            maxLife: 40,
+            gravity: 0.25,
+            kind: 'debris'
+          });
+        }
+
+        if (isFire) {
+          for (let f = 0; f < 18; f++) {
+            engine.flames.push({
+              x: x + (Math.random() - 0.5) * radius,
+              y: y - 4,
+              vx: (Math.random() - 0.5) * 3.5,
+              vy: -1.5 - Math.random() * 2.5,
+              life: 160 + Math.floor(Math.random() * 80),
+              maxLife: 240,
+              ownerTeam
+            });
+          }
+        }
+
+        const blastReach = Math.max(radius * 1.35, 36);
+        engine.worms.forEach((w) => {
+          if (!w.alive) return;
+          const dx = w.x - x;
+          const dy = w.y - 8 - y;
+          const dist = Math.hypot(dx, dy);
+          if (dist <= blastReach) {
+            const falloff = Math.max(0.15, 1 - dist / blastReach);
+            const freezeMult = w.frozen ? 0.25 : 1.0;
+            const dealt = Math.round(damage * falloff * freezeMult);
+            if (dealt > 0) {
+              w.hp = Math.max(0, w.hp - dealt);
+              w.hurtTimer = 28;
+              sound.playWormVoice('hurt');
+              engine.floatingTexts.push({
+                x: w.x,
+                y: w.y - 26,
+                vy: -0.9,
+                text: `-${dealt}`,
+                color: teamsConfig[w.teamIndex] ? teamsConfig[w.teamIndex].color : '#ffffff',
+                life: 55
+              });
+            }
+            const pushAngle = dist < 2 ? -Math.PI / 2 : Math.atan2(dy - 10, dx);
+            const pushForce = knockback * falloff;
+            w.vx += Math.cos(pushAngle) * pushForce;
+            w.vy += Math.sin(pushAngle) * pushForce - 2.2 * falloff;
+            w.state = 'falling';
+            w.fallPeakY = w.y;
+            if (w.id === engine.turn.activeWormId) engine.rope.active = false;
+          }
+        });
+
+        engine.hazards.forEach((h) => {
+          if (!h.triggered && Math.hypot(h.x - x, h.y - y) <= blastReach) {
+            h.triggered = true;
+            h.fuseTicks = h.kind === 'barrel' ? 4 : 35;
+          }
+        });
+
+        engine.crates = engine.crates.filter((c) => {
+          if (Math.hypot(c.x - x, c.y - y) <= radius * 1.1) {
+            engine.floatingTexts.push({
+              x: c.x, y: c.y - 16, vy: -0.8, text: '¡Caja destruida!', color: '#fca5a5', life: 45
+            });
+            return false;
+          }
+          return true;
+        });
+      }
+
+      // ======================================================================
+      // EJECUCIÓN DE ARMAS Y UTILIDADES
+      // ======================================================================
+      function fireSelectedWeapon(powerOverride) {
+        if (!engine || !terrain) return;
+        const activeWorm = engine.worms.find((w) => w.id === engine.turn.activeWormId && w.alive);
+        if (!activeWorm) return;
+
+        const wDef = WEAPONS_CATALOG.find((w) => w.id === engine.turn.selectedWeaponId) || WEAPONS_CATALOG[5];
+        const teamAmmo = engine.turn.ammoByTeam[engine.turn.teamIndex];
+        if ((teamAmmo[wDef.id] || 0) <= 0) {
+          showToast(`Sin munición de ${wDef.name}`);
+          return;
+        }
+
+        const power = powerOverride !== undefined ? powerOverride : Math.max(0.18, Math.min(1.0, engine.turn.chargeTicks / 65));
+        engine.turn.charging = false;
+        engine.turn.chargeTicks = 0;
+
+        const worldAimAngle = activeWorm.facing === 1 ? activeWorm.aimAngle : Math.PI - activeWorm.aimAngle;
+        const muzzleX = activeWorm.x + Math.cos(worldAimAngle) * 12;
+        const muzzleY = activeWorm.y - 9 + Math.sin(worldAimAngle) * 12;
+
+        const consumeAmmo = () => {
+          if (teamAmmo[wDef.id] < 90) {
+            teamAmmo[wDef.id] = Math.max(0, teamAmmo[wDef.id] - 1);
+          }
+        };
+
+        const enterRetreat = (customSec) => {
+          const scheme = SCHEMES[selectedScheme];
+          const sec = customSec !== undefined ? customSec : scheme.retreatTime;
+          engine.turn.phase = 'retreat';
+          engine.turn.ticksLeft = sec * TICK_RATE;
+          engine.killFeed = `${activeWorm.name} usó ${wDef.name} — ¡Retirada (${sec}s)!`;
+        };
+
+        // Comandos F12
+        if (wDef.id === 'skip_go') {
+          engine.killFeed = `${activeWorm.name} pasa el turno.`;
+          engine.turn.phase = 'resolving';
+          engine.turn.ticksLeft = 25;
+          return;
+        }
+        if (wDef.id === 'select_worm') {
+          const teamWorms = engine.worms.filter((w) => w.teamIndex === engine.turn.teamIndex && w.alive);
+          if (teamWorms.length > 1) {
+            const curIdx = teamWorms.findIndex((w) => w.id === activeWorm.id);
+            const nextW = teamWorms[(curIdx + 1) % teamWorms.length];
+            engine.turn.activeWormId = nextW.id;
+            engine.camera.manualPanTimer = 0;
+            sound.playWormVoice('turn');
+            showToast(`Controlando a ${nextW.name}`);
+          }
+          return;
+        }
+        if (wDef.id === 'freeze') {
+          consumeAmmo();
+          activeWorm.frozen = true;
+          sound.playWormVoice('collect');
+          engine.killFeed = `${activeWorm.name} se ha congelado (75% defensa).`;
+          engine.turn.phase = 'resolving';
+          engine.turn.ticksLeft = 35;
+          return;
+        }
+        if (wDef.id === 'surrender') {
+          engine.worms.forEach((w) => {
+            if (w.teamIndex === engine.turn.teamIndex) {
+              w.hp = 0;
+              w.alive = false;
+            }
+          });
+          engine.turn.phase = 'resolving';
+          engine.turn.ticksLeft = 20;
+          return;
+        }
+
+        // Utilidades
+        if (wDef.type === 'utility') {
+          consumeAmmo();
+          sound.playWormVoice('collect');
+          if (wDef.id === 'low_gravity') {
+            engine.turn.lowGravity = true;
+            showToast('¡Baja Gravedad activada!');
+          } else if (wDef.id === 'fast_walk') {
+            engine.turn.fastWalk = true;
+            showToast('¡Paso Rápido activado!');
+          } else if (wDef.id === 'laser_sight') {
+            engine.turn.laserSight = true;
+            showToast('¡Mira Láser activada!');
+          } else if (wDef.id === 'double_damage') {
+            engine.turn.doubleDamage = true;
+            showToast('¡Daño Doble activado!');
+          } else if (wDef.id === 'parachute' || wDef.id === 'bungee') {
+            activeWorm.parachuteOpen = true;
+            showToast('¡Paracaídas equipado!');
+          } else if (wDef.id === 'jetpack') {
+            engine.turn.jetpackFuel = 100;
+            activeWorm.vy = -3.5;
+            activeWorm.state = 'falling';
+            showToast('¡Jet Pack encendido! Usa flechas para volar');
+          }
+          engine.turn.selectedWeaponId = 'bazooka';
+          return;
+        }
+
+        // Cuerda Ninja
+        if (wDef.id === 'ninja_rope') {
+          if (engine.rope.active) {
+            engine.rope.active = false;
+            activeWorm.state = 'falling';
+            return;
+          }
+          for (let d = 10; d < 240; d += 3) {
+            const rx = activeWorm.x + Math.cos(worldAimAngle) * d;
+            const ry = activeWorm.y - 10 + Math.sin(worldAimAngle) * d;
+            if (terrain.isSolid(rx, ry)) {
+              engine.rope = { active: true, anchorX: rx, anchorY: ry, length: Math.max(24, d) };
+              activeWorm.state = 'roping';
+              sound.playLaunch();
+              return;
+            }
+          }
+          showToast('La Cuerda Ninja no encontró techo al alcance');
+          return;
+        }
+
+        // Teletransporte
+        if (wDef.id === 'teleport') {
+          const tp = engine.turn.targetPoint;
+          if (!tp) {
+            showToast('Haz clic en el mapa para elegir destino de Teletransporte');
+            return;
+          }
+          if (terrain.isSolid(tp.x, tp.y) || tp.y >= engine.waterY - 12) {
+            showToast('Destino bloqueado o bajo el agua');
+            return;
+          }
+          consumeAmmo();
+          engine.particles.push({
+            x: activeWorm.x, y: activeWorm.y - 8, vx: 0, vy: 0, size: 32,
+            color: '#c084fc', life: 18, maxLife: 18, gravity: 0, kind: 'ring'
+          });
+          activeWorm.x = tp.x;
+          activeWorm.y = tp.y;
+          activeWorm.vx = 0;
+          activeWorm.vy = 0;
+          activeWorm.state = 'falling';
+          engine.turn.targetPoint = null;
+          sound.playWormVoice('collect');
+          enterRetreat(2);
+          return;
+        }
+
+        // Vigas metálicas
+        if (wDef.type === 'girder') {
+          const tp = engine.turn.targetPoint || {
+            x: activeWorm.x + Math.cos(worldAimAngle) * 55,
+            y: activeWorm.y - 10 + Math.sin(worldAimAngle) * 55
+          };
+          if (Math.hypot(tp.x - activeWorm.x, tp.y - activeWorm.y) > 220) {
+            showToast('Demasiado lejos para construir la viga');
+            return;
+          }
+          consumeAmmo();
+          const len = wDef.id === 'girder_pack' ? 145 : 96;
+          terrain.addGirder(tp.x, tp.y, (engine.turn.girderAngle * Math.PI) / 180, len, 12);
+          engine.turn.targetPoint = null;
+          sound.playBounce();
+          enterRetreat(2);
+          return;
+        }
+
+        // Súper Armas Globales
+        if (wDef.id === 'scales_justice') {
+          consumeAmmo();
+          const aliveTeams = teamsConfig
+            .map((_, idx) => ({ idx, worms: engine.worms.filter((w) => w.teamIndex === idx && w.alive) }))
+            .filter((t) => t.worms.length > 0);
+          if (aliveTeams.length > 1) {
+            const totalGlobalHp = aliveTeams.reduce((acc, t) => acc + t.worms.reduce((s, w) => s + w.hp, 0), 0);
+            const targetTeamHp = Math.floor(totalGlobalHp / aliveTeams.length);
+            aliveTeams.forEach((t) => {
+              const perWorm = Math.max(10, Math.floor(targetTeamHp / t.worms.length));
+              t.worms.forEach((w) => (w.hp = perWorm));
+            });
+          }
+          sound.playFanfare();
+          engine.killFeed = '¡La Balanza de la Justicia ha equilibrado la salud!';
+          enterRetreat(2);
+          return;
+        }
+
+        if (wDef.id === 'earthquake') {
+          consumeAmmo();
+          engine.camera.shake = 32;
+          sound.playExplosion(1.6);
+          engine.worms.forEach((w) => {
+            if (!w.alive) return;
+            w.vx += (Math.random() - 0.5) * 9;
+            w.vy -= 3.5 + Math.random() * 2.5;
+            w.state = 'falling';
+            w.hp = Math.max(1, w.hp - 12);
+          });
+          enterRetreat(3);
+          return;
+        }
+
+        if (wDef.id === 'nuclear_test') {
+          consumeAmmo();
+          engine.camera.shake = 36;
+          engine.waterY -= 42;
+          sound.playExplosion(1.8);
+          engine.worms.forEach((w) => {
+            if (!w.alive) return;
+            w.poisoned = true;
+            w.hp = Math.max(1, w.hp - 35);
+            w.vy -= 4;
+            w.state = 'falling';
+          });
+          engine.killFeed = '¡Prueba Nuclear! Agua elevada y todos envenenados.';
+          enterRetreat(3);
+          return;
+        }
+
+        if (wDef.id === 'armageddon') {
+          consumeAmmo();
+          sound.playLaunch();
+          for (let m = 0; m < 22; m++) {
+            engine.projectiles.push({
+              id: `meteor-${Date.now()}-${m}`,
+              weaponId: 'armageddon',
+              ownerTeam: engine.turn.teamIndex,
+              ownerWormId: activeWorm.id,
+              x: 100 + Math.random() * (WORLD_W - 200),
+              y: -60 - m * 55,
+              vx: (Math.random() - 0.5) * 3,
+              vy: 8 + Math.random() * 4,
+              radius: 10,
+              damage: 60,
+              blastRadius: 56,
+              knockback: 10,
+              windFactor: 0.2,
+              bounciness: 0,
+              fuseTicks: -1,
+              homingDelay: 0,
+              ageTicks: 0,
+              trailTimer: 0
+            });
+          }
+          engine.turn.phase = 'resolving';
+          engine.turn.ticksLeft = 220;
+          engine.killFeed = '¡ARMAGEDDON DESATADO!';
+          return;
+        }
+
+        if (wDef.id === 'concrete_donkey') {
+          const tp = engine.turn.targetPoint;
+          if (!tp) {
+            showToast('Haz clic en el mapa para invocar al Burro de Hormigón');
+            return;
+          }
+          consumeAmmo();
+          sound.playFanfare();
+          engine.projectiles.push({
+            id: `donkey-${Date.now()}`,
+            weaponId: 'concrete_donkey',
+            ownerTeam: engine.turn.teamIndex,
+            ownerWormId: activeWorm.id,
+            x: tp.x,
+            y: -80,
+            vx: 0,
+            vy: 11,
+            radius: 26,
+            damage: 95,
+            blastRadius: 72,
+            knockback: 13,
+            windFactor: 0,
+            bounciness: 0,
+            fuseTicks: -1,
+            homingDelay: 0,
+            animalType: 'donkey',
+            ageTicks: 0,
+            trailTimer: 0
+          });
+          engine.turn.targetPoint = null;
+          engine.turn.phase = 'resolving';
+          engine.turn.ticksLeft = 180;
+          return;
+        }
+
+        // Ataques Aéreos
+        if (wDef.type === 'airstrike') {
+          const tp = engine.turn.targetPoint;
+          if (!tp) {
+            showToast(`Haz clic en el mapa para marcar el ${wDef.name}`);
+            return;
+          }
+          consumeAmmo();
+          sound.playLaunch();
+          for (let i = 0; i < 5; i++) {
+            const offsetX = (i - 2) * 38;
+            engine.projectiles.push({
+              id: `air-${Date.now()}-${i}`,
+              weaponId: wDef.id,
+              ownerTeam: engine.turn.teamIndex,
+              ownerWormId: activeWorm.id,
+              x: tp.x + offsetX - 180,
+              y: -40 - i * 24,
+              vx: 3.4,
+              vy: 6.5,
+              radius: 6,
+              damage: wDef.damage,
+              blastRadius: wDef.blastRadius,
+              knockback: wDef.knockback,
+              windFactor: wDef.windFactor,
+              bounciness: wDef.bounciness,
+              fuseTicks: wDef.id === 'mine_strike' ? 140 : -1,
+              isFire: wDef.isFire,
+              animalType: wDef.id === 'mole_squadron' ? 'mole' : undefined,
+              ageTicks: 0,
+              trailTimer: 0
+            });
+          }
+          engine.turn.targetPoint = null;
+          engine.turn.phase = 'resolving';
+          engine.turn.ticksLeft = 180;
+          return;
+        }
+
+        // Excavación
+        if (wDef.type === 'dig') {
+          consumeAmmo();
+          sound.playExplosion(0.6);
+          const dirX = wDef.id === 'pneumatic_drill' ? 0 : Math.cos(worldAimAngle);
+          const dirY = wDef.id === 'pneumatic_drill' ? 1 : Math.sin(worldAimAngle);
+          for (let step = 0; step < 9; step++) {
+            const cx = activeWorm.x + dirX * step * 11;
+            const cy = activeWorm.y - 8 + dirY * step * 11;
+            terrain.destroyCircle(cx, cy, 17);
+            engine.worms.forEach((w) => {
+              if (w.id !== activeWorm.id && w.alive && Math.hypot(w.x - cx, w.y - 8 - cy) < 24) {
+                w.hp = Math.max(0, w.hp - 5);
+                w.vx += activeWorm.facing * 2.5;
+                w.vy -= 1.5;
+                w.state = 'falling';
+              }
+            });
+          }
+          activeWorm.x += dirX * 52;
+          activeWorm.y += dirY * 36;
+          activeWorm.state = 'falling';
+          enterRetreat(3);
+          return;
+        }
+
+        // Cuerpo a cuerpo
+        if (wDef.type === 'melee') {
+          consumeAmmo();
+          if (wDef.id === 'suicide_bomber') {
+            activeWorm.hp = 0;
+            activeWorm.alive = false;
+            spawnExplosion(activeWorm.x, activeWorm.y - 8, wDef.blastRadius, wDef.damage, wDef.knockback, engine.turn.teamIndex);
+            engine.turn.phase = 'resolving';
+            engine.turn.ticksLeft = 80;
+            return;
+          }
+          if (wDef.id === 'kamikaze') {
+            engine.projectiles.push({
+              id: `kami-${Date.now()}`,
+              weaponId: 'kamikaze',
+              ownerTeam: engine.turn.teamIndex,
+              ownerWormId: activeWorm.id,
+              x: activeWorm.x,
+              y: activeWorm.y - 8,
+              vx: Math.cos(worldAimAngle) * 12,
+              vy: Math.sin(worldAimAngle) * 12,
+              radius: 14,
+              damage: wDef.damage,
+              blastRadius: wDef.blastRadius,
+              knockback: wDef.knockback,
+              windFactor: 0,
+              bounciness: 0,
+              fuseTicks: 38,
+              homingDelay: 0,
+              ageTicks: 0,
+              trailTimer: 0
+            });
+            activeWorm.hp = 0;
+            activeWorm.alive = false;
+            sound.playLaunch();
+            engine.turn.phase = 'resolving';
+            engine.turn.ticksLeft = 90;
+            return;
+          }
+
+          sound.playLaunch();
+          if (wDef.id === 'fire_punch') {
+            activeWorm.vy = -6.5;
+            activeWorm.vx = activeWorm.facing * 2.2;
+            activeWorm.state = 'falling';
+          }
+          let hitAny = false;
+          engine.worms.forEach((w) => {
+            if (w.id === activeWorm.id || !w.alive) return;
+            if (Math.hypot(w.x - activeWorm.x, w.y - activeWorm.y) <= 34) {
+              hitAny = true;
+              const dmg = wDef.id === 'battle_axe' ? Math.ceil(w.hp * 0.5) : wDef.damage;
+              w.hp = Math.max(0, w.hp - dmg);
+              if (dmg > 0) {
+                sound.playWormVoice('hurt');
+                engine.floatingTexts.push({
+                  x: w.x, y: w.y - 26, vy: -0.9, text: `-${dmg}`,
+                  color: teamsConfig[w.teamIndex] ? teamsConfig[w.teamIndex].color : '#fff', life: 55
+                });
+              }
+              const launchAng = wDef.id === 'baseball_bat' ? worldAimAngle : -Math.PI / 3;
+              w.vx += Math.cos(launchAng) * wDef.knockback * (wDef.id === 'baseball_bat' ? 1 : activeWorm.facing);
+              w.vy += Math.sin(launchAng) * wDef.knockback - 2.0;
+              w.state = 'falling';
+            }
+          });
+          if (!hitAny && wDef.id === 'prod') showToast('¡Nadie al alcance del empujón!');
+          enterRetreat(3);
+          return;
+        }
+
+        // Armas de Fuego Hitscan
+        if (wDef.type === 'hitscan') {
+          if (wDef.id === 'flamethrower') {
+            consumeAmmo();
+            sound.playExplosion(0.5);
+            for (let f = 0; f < 28; f++) {
+              const spread = (Math.random() - 0.5) * 0.28;
+              const spd = 6 + Math.random() * 7;
+              engine.flames.push({
+                x: muzzleX, y: muzzleY,
+                vx: Math.cos(worldAimAngle + spread) * spd,
+                vy: Math.sin(worldAimAngle + spread) * spd,
+                life: 95 + Math.floor(Math.random() * 45),
+                maxLife: 140,
+                ownerTeam: engine.turn.teamIndex
+              });
+            }
+            enterRetreat(3);
+            return;
+          }
+
+          const bullets = wDef.id === 'uzi' ? 12 : wDef.id === 'minigun' ? 22 : 1;
+          const perBulletDmg = wDef.id === 'uzi' ? 4 : wDef.id === 'minigun' ? 3 : wDef.damage;
+          sound.playExplosion(0.45);
+
+          for (let b = 0; b < bullets; b++) {
+            const spread = bullets > 1 ? (Math.random() - 0.5) * 0.16 : 0;
+            const ang = worldAimAngle + spread;
+            const cos = Math.cos(ang);
+            const sin = Math.sin(ang);
+            for (let dist = 8; dist < 850; dist += 4) {
+              const rx = muzzleX + cos * dist;
+              const ry = muzzleY + sin * dist;
+              const hitWorm = engine.worms.find(
+                (w) => w.id !== activeWorm.id && w.alive && Math.abs(w.x - rx) <= 9 && Math.abs(w.y - 8 - ry) <= 11
+              );
+              if (hitWorm) {
+                hitWorm.hp = Math.max(0, hitWorm.hp - perBulletDmg);
+                hitWorm.vx += cos * (wDef.knockback / Math.sqrt(bullets));
+                hitWorm.vy += sin * (wDef.knockback / Math.sqrt(bullets)) - 1.5;
+                hitWorm.state = 'falling';
+                if (b === 0) {
+                  sound.playWormVoice('hurt');
+                  engine.floatingTexts.push({
+                    x: hitWorm.x, y: hitWorm.y - 26, vy: -0.9, text: `-${wDef.damage}`,
+                    color: teamsConfig[hitWorm.teamIndex] ? teamsConfig[hitWorm.teamIndex].color : '#fff', life: 50
+                  });
+                }
+                break;
+              }
+              if (terrain.isSolid(rx, ry)) {
+                terrain.destroyCircle(rx, ry, wDef.blastRadius);
+                engine.particles.push({
+                  x: rx, y: ry, vx: -cos * 2, vy: -sin * 2 - 1, size: 5,
+                  color: '#fef08a', life: 14, maxLife: 14, gravity: 0.1, kind: 'spark'
+                });
+                break;
+              }
+            }
+          }
+
+          engine.particles.push({
+            x: muzzleX, y: muzzleY,
+            vx: Math.cos(worldAimAngle) * 18,
+            vy: Math.sin(worldAimAngle) * 18,
+            size: 8, color: '#fde047', life: 8, maxLife: 8, gravity: 0, kind: 'spark'
+          });
+
+          if (engine.turn.shotsRemaining > 1) {
+            engine.turn.shotsRemaining--;
+            showToast(`Disparo extra disponible (${engine.turn.shotsRemaining} restante)`);
+          } else {
+            consumeAmmo();
+            engine.turn.shotsRemaining = 1;
+            enterRetreat(3);
+          }
+          return;
+        }
+
+        // Desplegables (Dinamita, Mina, Jarrón Ming)
+        if (wDef.type === 'deploy') {
+          consumeAmmo();
+          sound.playBounce();
+          if (wDef.id === 'mine') {
+            engine.hazards.push({
+              id: `mine-${Date.now()}`,
+              kind: 'mine',
+              x: activeWorm.x + activeWorm.facing * 12,
+              y: activeWorm.y - 4,
+              triggered: true,
+              fuseTicks: 150
+            });
+          } else {
+            engine.projectiles.push({
+              id: `dep-${Date.now()}`,
+              weaponId: wDef.id,
+              ownerTeam: engine.turn.teamIndex,
+              ownerWormId: activeWorm.id,
+              x: activeWorm.x + activeWorm.facing * 10,
+              y: activeWorm.y - 6,
+              vx: activeWorm.facing * 0.4,
+              vy: 0,
+              radius: 7,
+              damage: wDef.damage,
+              blastRadius: wDef.blastRadius,
+              knockback: wDef.knockback,
+              windFactor: 0,
+              bounciness: 0.1,
+              fuseTicks: 250,
+              clusterCount: wDef.clusterCount,
+              ageTicks: 0,
+              trailTimer: 0
+            });
+          }
+          enterRetreat(5);
+          return;
+        }
+
+        // Fauna Móvil
+        if (wDef.type === 'animal') {
+          consumeAmmo();
+          sound.playWormVoice('jump');
+          const count = wDef.id === 'mad_cows' ? 3 : 1;
+          const animalKind =
+            wDef.id === 'super_sheep' ? 'super_sheep'
+            : wDef.id === 'mole_bomb' ? 'mole'
+            : wDef.id === 'mad_cows' ? 'cow'
+            : wDef.id === 'old_woman' ? 'old_woman'
+            : wDef.id === 'skunk' ? 'skunk'
+            : 'sheep';
+
+          for (let c = 0; c < count; c++) {
+            engine.projectiles.push({
+              id: `ani-${Date.now()}-${c}`,
+              weaponId: wDef.id,
+              ownerTeam: engine.turn.teamIndex,
+              ownerWormId: activeWorm.id,
+              x: activeWorm.x + activeWorm.facing * (14 + c * 18),
+              y: activeWorm.y - 6,
+              vx: activeWorm.facing * (wDef.id === 'old_woman' ? 1.2 : 2.7),
+              vy: -1.5,
+              radius: 9,
+              damage: wDef.damage,
+              blastRadius: wDef.blastRadius,
+              knockback: wDef.knockback,
+              windFactor: 0,
+              bounciness: 0.35,
+              fuseTicks: wDef.id === 'old_woman' ? 300 : 500,
+              animalType: animalKind,
+              direction: activeWorm.facing,
+              clusterCount: wDef.clusterCount,
+              ageTicks: 0,
+              trailTimer: 0
+            });
+          }
+          engine.turn.phase = 'resolving';
+          engine.turn.ticksLeft = 520;
+          engine.killFeed = `¡${wDef.name} en marcha! Pulsa ESPACIO para detonar.`;
+          return;
+        }
+
+        // Proyectiles Balísticos y Granadas
+        if (wDef.needsTarget && !engine.turn.targetPoint) {
+          showToast(`Haz clic en el mapa para fijar el objetivo de ${wDef.name}`);
+          return;
+        }
+
+        sound.playLaunch();
+        const speed = 5.5 + power * 15.5;
+        const fuseTicks = wDef.id === 'holy_grenade' ? 240 : wDef.hasFuse ? engine.turn.fuseSeconds * TICK_RATE : -1;
+
+        engine.projectiles.push({
+          id: `proj-${Date.now()}`,
+          weaponId: wDef.id,
+          ownerTeam: engine.turn.teamIndex,
+          ownerWormId: activeWorm.id,
+          x: muzzleX,
+          y: muzzleY,
+          vx: Math.cos(worldAimAngle) * speed,
+          vy: Math.sin(worldAimAngle) * speed,
+          radius: 5,
+          damage: wDef.damage,
+          blastRadius: wDef.blastRadius,
+          knockback: wDef.knockback,
+          windFactor: wDef.windFactor,
+          bounciness: wDef.bounciness,
+          fuseTicks,
+          targetX: engine.turn.targetPoint ? engine.turn.targetPoint.x : undefined,
+          targetY: engine.turn.targetPoint ? engine.turn.targetPoint.y : undefined,
+          homingDelay: wDef.needsTarget ? 18 : 0,
+          clusterCount: wDef.clusterCount,
+          isFire: wDef.isFire,
+          ageTicks: 0,
+          trailTimer: 0
+        });
+
+        if ((wDef.shotsPerTurn || 1) > 1 && engine.turn.shotsRemaining > 1) {
+          engine.turn.shotsRemaining--;
+          showToast('Segunda flecha lista');
+        } else {
+          consumeAmmo();
+          engine.turn.targetPoint = null;
+          enterRetreat();
+        }
+      }
+
+      // ======================================================================
+      // TRANSICIÓN DE TURNO Y CAJAS EN PARACAÍDAS
+      // ======================================================================
+      function advanceToNextTurn() {
+        if (!engine || !terrain) return;
+        const scheme = SCHEMES[selectedScheme];
+
+        engine.worms.forEach((w) => {
+          if (w.alive && w.poisoned && w.hp > 1) {
+            const poisonDmg = Math.min(w.hp - 1, 5);
+            w.hp -= poisonDmg;
+            engine.floatingTexts.push({
+              x: w.x, y: w.y - 24, vy: -0.7, text: `-${poisonDmg} ☣`, color: '#a3e635', life: 45
+            });
+          }
+        });
+
+        const aliveTeams = teamsConfig
+          .map((_, idx) => idx)
+          .filter((idx) => engine.worms.some((w) => w.teamIndex === idx && w.alive));
+
+        if (aliveTeams.length <= 1) {
+          engine.turn.phase = 'gameover';
+          sound.playFanfare();
+          showGameOverModal();
+          return;
+        }
+
+        if (engine.suddenDeath) {
+          engine.waterY -= scheme.waterRisePerTurn;
+          engine.killFeed = '¡MUERTE REPENTINA! El nivel del agua sube.';
+        }
+
+        let nextTeam = (engine.turn.teamIndex + 1) % teamsConfig.length;
+        for (let i = 0; i < teamsConfig.length; i++) {
+          if (engine.worms.some((w) => w.teamIndex === nextTeam && w.alive)) break;
+          nextTeam = (nextTeam + 1) % teamsConfig.length;
+        }
+
+        const teamWorms = engine.worms.filter((w) => w.teamIndex === nextTeam && w.alive);
+        const cursor = (engine.turn.teamWormCursors[nextTeam] + 1) % teamWorms.length;
+        engine.turn.teamWormCursors[nextTeam] = cursor;
+        const nextWorm = teamWorms[cursor];
+        nextWorm.frozen = false;
+
+        const newWind = Math.max(-100, Math.min(100, Math.round((Math.random() * 2 - 1) * 95)));
+        engine.turn.teamIndex = nextTeam;
+        engine.turn.activeWormId = nextWorm.id;
+        engine.turn.phase = 'aim';
+        engine.turn.ticksLeft = scheme.turnTime * TICK_RATE;
+        engine.turn.wind = newWind;
+        engine.turn.charging = false;
+        engine.turn.chargeTicks = 0;
+        const curWDef = WEAPONS_CATALOG.find((w) => w.id === engine.turn.selectedWeaponId);
+        engine.turn.shotsRemaining = curWDef && curWDef.shotsPerTurn ? curWDef.shotsPerTurn : 1;
+        engine.turn.lowGravity = false;
+        engine.turn.fastWalk = false;
+        engine.turn.laserSight = false;
+        engine.turn.doubleDamage = false;
+        engine.turn.targetPoint = null;
+        engine.turn.aiThinkingTicks = 45;
+        engine.turn.aiPlan = null;
+        engine.rope.active = false;
+        engine.camera.manualPanTimer = 0;
+        engine.killFeed = `Turno de ${teamsConfig[nextTeam].name}: ${nextWorm.name}`;
+
+        if (engine.crates.length < 4 && Math.random() < scheme.crateChance) {
+          const cx = 180 + Math.random() * (WORLD_W - 360);
+          if (Math.random() < 0.42) {
+            engine.crates.push({
+              id: `crate-${Date.now()}`, kind: 'health', x: cx, y: 25, vy: 1.35, parachute: true, label: '+50 HP'
+            });
+          } else {
+            const bonusWeapons = WEAPONS_CATALOG.filter((w) => w.fKey >= 5 && w.fKey <= 11);
+            const picked = bonusWeapons[Math.floor(Math.random() * bonusWeapons.length)];
+            engine.crates.push({
+              id: `crate-${Date.now()}`, kind: 'weapon', x: cx, y: 25, vy: 1.35, parachute: true, weaponId: picked.id, label: picked.name
+            });
+          }
+        }
+        sound.playWormVoice('turn');
+      }
+
+      function showGameOverModal() {
+        if (!engine) return;
+        const aliveTeams = teamsConfig
+          .map((t, idx) => ({
+            name: t.name,
+            color: t.color,
+            survivors: engine.worms.filter((w) => w.teamIndex === idx && w.alive).length
+          }))
+          .filter((t) => t.survivors > 0);
+
+        const winner = aliveTeams[0] || { name: 'Empate', color: '#facc15', survivors: 0 };
+        const nameEl = document.getElementById('gameover-winner-name');
+        nameEl.textContent = winner.name;
+        nameEl.style.color = winner.color;
+        document.getElementById('gameover-survivors').textContent = `Supervivientes en pie: ${winner.survivors}`;
+        document.getElementById('modal-gameover').classList.remove('hidden');
+      }
+
+      // ======================================================================
+      // PASO DE SIMULACIÓN DETERMINISTA (50 HZ)
+      // ======================================================================
+      function stepPhysics() {
+        if (!engine || !terrain || paused || engine.turn.phase === 'gameover') return;
+        const scheme = SCHEMES[selectedScheme];
+        engine.waterWavePhase += 0.08;
+        if (engine.camera.shake > 0) engine.camera.shake = Math.max(0, engine.camera.shake - 0.9);
+        if (engine.camera.manualPanTimer > 0) engine.camera.manualPanTimer--;
+
+        engine.clouds.forEach((c) => {
+          c.x += c.speed + engine.turn.wind * 0.004;
+          if (c.x > WORLD_W + 120) c.x = -120;
+          if (c.x < -120) c.x = WORLD_W + 120;
+        });
+
+        if (!engine.suddenDeath && engine.turn.roundTicksLeft > 0) {
+          engine.turn.roundTicksLeft--;
+          if (engine.turn.roundTicksLeft === 0) {
+            engine.suddenDeath = true;
+            sound.playFanfare();
+            engine.killFeed = '⚠️ ¡MUERTE REPENTINA ACTIVADA!';
+          }
+        }
+
+        const activeWorm = engine.worms.find((w) => w.id === engine.turn.activeWormId && w.alive);
+        const activeTeamCfg = teamsConfig[engine.turn.teamIndex];
+        const isAiTurn = activeTeamCfg && activeTeamCfg.controller !== 'human';
+        const activeWeapon = WEAPONS_CATALOG.find((w) => w.id === engine.turn.selectedWeaponId) || WEAPONS_CATALOG[5];
+
+        // Control activo (IA o Humano)
+        if (activeWorm && (engine.turn.phase === 'aim' || engine.turn.phase === 'retreat')) {
+          if (isAiTurn && engine.turn.phase === 'aim') {
+            if (engine.turn.aiThinkingTicks > 0) {
+              engine.turn.aiThinkingTicks--;
+            } else if (!engine.turn.aiPlan) {
+              const enemies = engine.worms.filter((w) => w.teamIndex !== engine.turn.teamIndex && w.alive);
+              const target = enemies.sort(
+                (a, b) => Math.hypot(a.x - activeWorm.x, a.y - activeWorm.y) - Math.hypot(b.x - activeWorm.x, b.y - activeWorm.y)
+              )[0];
+
+              if (target) {
+                const dx = target.x - activeWorm.x;
+                const dy = target.y - activeWorm.y;
+                const dist = Math.hypot(dx, dy);
+                activeWorm.facing = dx >= 0 ? 1 : -1;
+
+                let chosenId = 'bazooka';
+                if (dist < 42 && !scheme.artilleryMode) chosenId = 'fire_punch';
+                else if (dist < 280 && Math.abs(dy) < 55) chosenId = 'shotgun';
+                else if (Math.random() < 0.25) chosenId = 'grenade';
+                else if (Math.random() < 0.18 && (engine.turn.ammoByTeam[engine.turn.teamIndex]['air_strike'] || 0) > 0) chosenId = 'air_strike';
+
+                let bestAngle = -0.65;
+                let bestPower = 0.65;
+                let bestErr = Infinity;
+                const windAccel = (engine.turn.wind / 100) * 0.045;
+                for (let a = -1.25; a <= 0.25; a += 0.12) {
+                  for (let p = 0.3; p <= 1.0; p += 0.1) {
+                    const spd = 5.5 + p * 15.5;
+                    const worldA = activeWorm.facing === 1 ? a : Math.PI - a;
+                    let px = activeWorm.x;
+                    let py = activeWorm.y - 10;
+                    let vx = Math.cos(worldA) * spd;
+                    let vy = Math.sin(worldA) * spd;
+                    for (let t = 0; t < 130; t++) {
+                      vx += windAccel;
+                      vy += GRAVITY;
+                      px += vx;
+                      py += vy;
+                      const err = Math.hypot(px - target.x, py - target.y);
+                      if (err < bestErr) {
+                        bestErr = err;
+                        bestAngle = a;
+                        bestPower = p;
+                      }
+                      if (terrain.isSolid(px, py) || py > engine.waterY) break;
+                    }
+                  }
+                }
+
+                const spread = activeTeamCfg.controller === 'ai_easy' ? 0.24 : activeTeamCfg.controller === 'ai_normal' ? 0.11 : 0.03;
+                engine.turn.selectedWeaponId = chosenId;
+                engine.turn.aiPlan = {
+                  moveDir: scheme.artilleryMode || dist < 120 ? 0 : activeWorm.facing,
+                  moveTicks: scheme.artilleryMode ? 0 : 18,
+                  targetAngle: bestAngle + (Math.random() - 0.5) * spread,
+                  targetPower: Math.max(0.25, Math.min(1, bestPower + (Math.random() - 0.5) * spread)),
+                  targetPoint: { x: target.x, y: target.y }
+                };
+              }
+            } else {
+              const plan = engine.turn.aiPlan;
+              if (plan.moveTicks > 0) {
+                plan.moveTicks--;
+                if (plan.moveDir !== 0 && activeWorm.state !== 'falling') {
+                  activeWorm.facing = plan.moveDir;
+                  const nx = activeWorm.x + plan.moveDir * 1.4;
+                  if (nx > 25 && nx < WORLD_W - 25 && !terrain.isSolid(nx, activeWorm.y - 9)) {
+                    activeWorm.x = nx;
+                    activeWorm.state = 'walking';
+                  }
+                }
+              } else {
+                const diff = plan.targetAngle - activeWorm.aimAngle;
+                if (Math.abs(diff) > 0.04) {
+                  activeWorm.aimAngle += Math.sign(diff) * 0.04;
+                } else {
+                  if (plan.targetPoint) engine.turn.targetPoint = plan.targetPoint;
+                  fireSelectedWeapon(plan.targetPower);
+                  engine.turn.aiPlan = null;
+                }
+              }
+            }
+          } else if (!isAiTurn) {
+            const left = engine.keys.has('ArrowLeft') || engine.keys.has('KeyA');
+            const right = engine.keys.has('ArrowRight') || engine.keys.has('KeyD');
+            const up = engine.keys.has('ArrowUp') || engine.keys.has('KeyW');
+            const down = engine.keys.has('ArrowDown') || engine.keys.has('KeyS');
+
+            if (engine.rope.active) {
+              if (left) activeWorm.vx -= 0.16;
+              if (right) activeWorm.vx += 0.16;
+              if (up) engine.rope.length = Math.max(20, engine.rope.length - 3.2);
+              if (down) engine.rope.length = Math.min(260, engine.rope.length + 3.2);
+            } else if (activeWeapon.id === 'jetpack' && engine.turn.jetpackFuel > 0 && (up || left || right)) {
+              if (up) {
+                activeWorm.vy = Math.max(-4.5, activeWorm.vy - 0.52);
+                engine.turn.jetpackFuel = Math.max(0, engine.turn.jetpackFuel - 0.55);
+              }
+              if (left) {
+                activeWorm.facing = -1;
+                activeWorm.vx = Math.max(-3.6, activeWorm.vx - 0.35);
+                engine.turn.jetpackFuel = Math.max(0, engine.turn.jetpackFuel - 0.35);
+              }
+              if (right) {
+                activeWorm.facing = 1;
+                activeWorm.vx = Math.min(3.6, activeWorm.vx + 0.35);
+                engine.turn.jetpackFuel = Math.max(0, engine.turn.jetpackFuel - 0.35);
+              }
+              activeWorm.state = 'falling';
+            } else {
+              if (up && !engine.turn.charging) {
+                activeWorm.aimAngle = Math.max(-Math.PI / 2 + 0.05, activeWorm.aimAngle - 0.038);
+              }
+              if (down && !engine.turn.charging) {
+                activeWorm.aimAngle = Math.min(Math.PI / 2 - 0.05, activeWorm.aimAngle + 0.038);
+              }
+
+              if (!scheme.artilleryMode && !engine.turn.charging && (left || right)) {
+                const dir = left ? -1 : 1;
+                activeWorm.facing = dir;
+                if (activeWorm.state === 'standing' || activeWorm.state === 'walking') {
+                  const speed = engine.turn.fastWalk ? 2.6 : 1.45;
+                  const nextX = activeWorm.x + dir * speed;
+                  if (nextX > 18 && nextX < WORLD_W - 18) {
+                    let climbed = false;
+                    for (let step = 0; step <= MAX_STEP_CLIMB; step++) {
+                      const testY = activeWorm.y - step;
+                      if (!terrain.isSolid(nextX, testY) && !terrain.isSolid(nextX, testY - 10)) {
+                        activeWorm.x = nextX;
+                        activeWorm.y = testY;
+                        activeWorm.state = 'walking';
+                        activeWorm.walkFrame = (activeWorm.walkFrame + 1) % 15;
+                        climbed = true;
+                        break;
+                      }
+                    }
+                    if (!climbed) activeWorm.state = 'standing';
+                  }
+                } else if (activeWorm.state === 'falling' && activeWorm.parachuteOpen) {
+                  activeWorm.vx += dir * 0.14;
+                }
+              } else if (activeWorm.state === 'walking') {
+                activeWorm.state = 'standing';
+              }
+            }
+
+            if (engine.turn.charging && engine.turn.phase === 'aim') {
+              engine.turn.chargeTicks++;
+              if (engine.turn.chargeTicks % 6 === 0) sound.playChargeTick(engine.turn.chargeTicks / 65);
+              if (engine.turn.chargeTicks >= 65) fireSelectedWeapon(1.0);
+            }
+          }
+
+          if (engine.turn.ticksLeft > 0) {
+            engine.turn.ticksLeft--;
+            if (engine.turn.ticksLeft === 0) {
+              if (engine.turn.phase === 'aim' && engine.turn.charging) fireSelectedWeapon();
+              else {
+                engine.turn.phase = 'resolving';
+                engine.turn.ticksLeft = 40;
+              }
+            }
+          }
+        }
+
+        // Física de Gusanos
+        const grav = engine.turn.lowGravity ? GRAVITY * 0.48 : GRAVITY;
+        engine.worms.forEach((w) => {
+          if (!w.alive) return;
+          if (w.hurtTimer > 0) w.hurtTimer--;
+
+          if (w.id === engine.turn.activeWormId && engine.rope.active) {
+            w.vy += grav * 0.85;
+            w.vx *= 0.992;
+            w.vy *= 0.992;
+            w.x += w.vx;
+            w.y += w.vy;
+            const dx = w.x - engine.rope.anchorX;
+            const dy = w.y - 10 - engine.rope.anchorY;
+            const dist = Math.hypot(dx, dy);
+            if (dist > engine.rope.length && dist > 0.01) {
+              const nx = dx / dist;
+              const ny = dy / dist;
+              w.x = engine.rope.anchorX + nx * engine.rope.length;
+              w.y = engine.rope.anchorY + 10 + ny * engine.rope.length;
+              const radialVel = w.vx * nx + w.vy * ny;
+              if (radialVel > 0) {
+                w.vx -= radialVel * nx;
+                w.vy -= radialVel * ny;
+              }
+            }
+            return;
+          }
+
+          const groundBelow =
+            terrain.isSolid(w.x, w.y + 1) || terrain.isSolid(w.x - 3, w.y + 1) || terrain.isSolid(w.x + 3, w.y + 1);
+
+          if (w.state === 'standing' || w.state === 'walking') {
+            if (!groundBelow) {
+              let snapped = false;
+              for (let drop = 2; drop <= 6; drop++) {
+                if (terrain.isSolid(w.x, w.y + drop)) {
+                  w.y += drop - 1;
+                  snapped = true;
+                  break;
+                }
+              }
+              if (!snapped) {
+                w.state = 'falling';
+                w.fallPeakY = w.y;
+              }
+            }
+          } else if (w.state === 'jumping' || w.state === 'falling') {
+            if (w.parachuteOpen && w.vy > 1.2) {
+              w.vy = 1.2;
+              w.vx += (engine.turn.wind / 100) * 0.06;
+              w.vx *= 0.94;
+            } else {
+              w.vy += grav;
+            }
+
+            const nextX = w.x + w.vx;
+            if (nextX < 14 || nextX > WORLD_W - 14 || terrain.isSolid(nextX, w.y - 8)) {
+              w.vx = -w.vx * 0.35;
+            } else {
+              w.x = nextX;
+            }
+
+            if (w.vy < 0 && terrain.isSolid(w.x, w.y - WORM_H)) w.vy = 0.5;
+
+            const nextY = w.y + w.vy;
+            if (w.vy >= 0 && terrain.isSolid(w.x, nextY)) {
+              while (terrain.isSolid(w.x, w.y) && w.y > 10) w.y -= 1;
+              const fallHeight = w.y - w.fallPeakY;
+              if (fallHeight > 145 && !w.parachuteOpen) {
+                const fallDmg = Math.min(45, Math.round((fallHeight - 145) * 0.22));
+                if (fallDmg > 0) {
+                  w.hp = Math.max(0, w.hp - fallDmg);
+                  sound.playWormVoice('hurt');
+                  engine.floatingTexts.push({ x: w.x, y: w.y - 26, vy: -0.9, text: `-${fallDmg}`, color: '#fca5a5', life: 45 });
+                }
+              }
+              w.vx = 0;
+              w.vy = 0;
+              w.parachuteOpen = false;
+              w.state = 'standing';
+            } else {
+              w.y = nextY;
+              if (w.y < w.fallPeakY) w.fallPeakY = w.y;
+            }
+          }
+
+          if (w.y >= engine.waterY) {
+            w.alive = false;
+            w.hp = 0;
+            w.state = 'drowning';
+            sound.playSplash();
+            engine.killFeed = `🌊 ¡${w.name} (${teamsConfig[w.teamIndex] ? teamsConfig[w.teamIndex].name : ''}) se ha ahogado!`;
+            for (let s = 0; s < 22; s++) {
+              engine.particles.push({
+                x: w.x + (Math.random() - 0.5) * 18,
+                y: engine.waterY,
+                vx: (Math.random() - 0.5) * 5.5,
+                vy: -3.5 - Math.random() * 5.5,
+                size: 4 + Math.random() * 4,
+                color: '#e0f2fe',
+                life: 32,
+                maxLife: 32,
+                gravity: 0.28,
+                kind: 'water'
+              });
+            }
+          } else if (w.hp <= 0 && w.state === 'standing') {
+            w.alive = false;
+            w.state = 'dead';
+            engine.gravestones.push({
+              x: w.x, y: w.y, vy: 0,
+              teamColor: teamsConfig[w.teamIndex] ? teamsConfig[w.teamIndex].color : '#94a3b8',
+              name: w.name
+            });
+            spawnExplosion(w.x, w.y - 8, 22, 15, 4, w.teamIndex);
+            engine.killFeed = `🪦 ¡${w.name} ha caído en combate!`;
+          }
+        });
+
+        // Proyectiles
+        const nextProjectiles = [];
+        engine.projectiles.forEach((p) => {
+          p.ageTicks++;
+          p.trailTimer++;
+
+          if (p.animalType === 'sheep' || p.animalType === 'super_sheep' || p.animalType === 'cow' || p.animalType === 'old_woman' || p.animalType === 'skunk') {
+            const dir = p.direction || 1;
+            const walkSpd = p.animalType === 'cow' ? 3.8 : p.animalType === 'old_woman' ? 1.1 : 2.5;
+            p.vx = dir * walkSpd;
+            p.vy += grav;
+            const nx = p.x + p.vx;
+            if (nx < 20 || nx > WORLD_W - 20) {
+              p.direction = dir * -1;
+            } else if (terrain.isSolid(nx, p.y - 6)) {
+              if (!terrain.isSolid(nx, p.y - 16)) {
+                p.y -= 10;
+                p.x = nx;
+              } else if (p.animalType === 'sheep' || p.animalType === 'super_sheep') {
+                p.vy = -5.2;
+              } else {
+                p.direction = dir * -1;
+              }
+            } else {
+              p.x = nx;
+            }
+
+            if (p.vy >= 0 && terrain.isSolid(p.x, p.y + p.vy)) {
+              while (terrain.isSolid(p.x, p.y) && p.y > 10) p.y -= 1;
+              p.vy = p.animalType === 'sheep' || p.animalType === 'super_sheep' ? -3.4 : 0;
+            } else {
+              p.y += p.vy;
+            }
+
+            if (p.animalType === 'skunk' && p.ageTicks % 15 === 0) {
+              engine.particles.push({
+                x: p.x, y: p.y - 8, vx: (Math.random() - 0.5) * 1.5, vy: -0.6,
+                size: 16, color: 'rgba(132, 204, 22, 0.55)', life: 35, maxLife: 35, gravity: -0.01, kind: 'smoke'
+              });
+              engine.worms.forEach((w) => {
+                if (w.alive && Math.hypot(w.x - p.x, w.y - p.y) < 42) w.poisoned = true;
+              });
+            }
+
+            p.fuseTicks--;
+            if (p.fuseTicks <= 0 || p.y >= engine.waterY) {
+              if (p.y >= engine.waterY) sound.playSplash();
+              else spawnExplosion(p.x, p.y - 6, p.blastRadius, p.damage, p.knockback, p.ownerTeam);
+              return;
+            }
+            nextProjectiles.push(p);
+            return;
+          }
+
+          if (p.animalType === 'donkey') {
+            p.y += p.vy;
+            if (p.ageTicks % 5 === 0 && terrain.isSolid(p.x, p.y)) {
+              spawnExplosion(p.x, p.y, p.blastRadius, p.damage, p.knockback, p.ownerTeam);
+            }
+            if (p.y >= engine.waterY + 30) {
+              sound.playSplash();
+              return;
+            }
+            nextProjectiles.push(p);
+            return;
+          }
+
+          if (p.animalType === 'mole') {
+            p.vy += grav * 0.6;
+            p.x += p.vx;
+            p.y += p.vy;
+            if (terrain.isSolid(p.x, p.y)) {
+              terrain.destroyCircle(p.x, p.y, 14);
+              p.vy = Math.min(p.vy, 2.2);
+            }
+            if (p.ageTicks > 110 || p.y >= engine.waterY) {
+              spawnExplosion(p.x, p.y, p.blastRadius, p.damage, p.knockback, p.ownerTeam);
+              return;
+            }
+            nextProjectiles.push(p);
+            return;
+          }
+
+          if (p.targetX !== undefined && p.targetY !== undefined && p.ageTicks >= p.homingDelay) {
+            const desiredAngle = Math.atan2(p.targetY - p.y, p.targetX - p.x);
+            const curSpeed = Math.hypot(p.vx, p.vy);
+            const curAngle = Math.atan2(p.vy, p.vx);
+            let diff = desiredAngle - curAngle;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            const turnRate = p.weaponId === 'patsy_bullet' ? 0.14 : 0.085;
+            const newAngle = curAngle + Math.max(-turnRate, Math.min(turnRate, diff));
+            const targetSpd = Math.max(curSpeed, 9.5);
+            p.vx = Math.cos(newAngle) * targetSpd;
+            p.vy = Math.sin(newAngle) * targetSpd;
+          } else {
+            p.vx += (engine.turn.wind / 100) * 0.045 * p.windFactor;
+            p.vy += grav;
+          }
+
+          if (p.trailTimer % 2 === 0 && p.fuseTicks < 0) {
+            engine.particles.push({
+              x: p.x, y: p.y, vx: (Math.random() - 0.5) * 0.6, vy: (Math.random() - 0.5) * 0.6,
+              size: p.weaponId === 'bazooka' || p.weaponId === 'homing_missile' ? 6.5 : 4,
+              color: p.isFire ? 'rgba(251,146,60,0.75)' : 'rgba(226,232,240,0.65)',
+              life: 22, maxLife: 22, gravity: -0.02, kind: 'smoke'
+            });
+          }
+
+          const nextX = p.x + p.vx;
+          const nextY = p.y + p.vy;
+
+          if (nextY >= engine.waterY) {
+            sound.playSplash();
+            for (let s = 0; s < 14; s++) {
+              engine.particles.push({
+                x: nextX + (Math.random() - 0.5) * 14, y: engine.waterY,
+                vx: (Math.random() - 0.5) * 4, vy: -3 - Math.random() * 4,
+                size: 3.5, color: '#e0f2fe', life: 24, maxLife: 24, gravity: 0.25, kind: 'water'
+              });
+            }
+            return;
+          }
+
+          const hitWorm = engine.worms.find(
+            (w) => w.alive && (p.ageTicks > 8 || w.id !== p.ownerWormId) && Math.hypot(w.x - nextX, w.y - 8 - nextY) <= p.radius + 8
+          );
+          const hitTerrain = terrain.isSolid(nextX, nextY);
+
+          if (p.bounciness > 0 && p.fuseTicks > 0) {
+            if (hitTerrain) {
+              if (Math.hypot(p.vx, p.vy) > 1.8) sound.playBounce();
+              if (terrain.isSolid(nextX, p.y)) p.vx = -p.vx * p.bounciness;
+              if (terrain.isSolid(p.x, nextY)) p.vy = -p.vy * p.bounciness;
+              p.vx *= 0.86;
+            } else {
+              p.x = nextX;
+              p.y = nextY;
+            }
+          } else if (hitTerrain || hitWorm || nextX < 0 || nextX > WORLD_W) {
+            if (p.weaponId === 'longbow') {
+              terrain.addGirder(p.x, p.y, Math.atan2(p.vy, p.vx), 38, 6);
+              if (hitWorm) {
+                hitWorm.hp = Math.max(0, hitWorm.hp - p.damage);
+                hitWorm.vx += p.vx * 0.4;
+                hitWorm.vy -= 2;
+                hitWorm.state = 'falling';
+              }
+              return;
+            }
+
+            if (p.weaponId === 'holy_grenade' && p.fuseTicks > 45) {
+              p.vx = 0;
+              p.vy = 0;
+              p.fuseTicks = 45;
+              sound.playHallelujah();
+              nextProjectiles.push(p);
+              return;
+            }
+
+            spawnExplosion(nextX, nextY, p.blastRadius, p.damage, p.knockback, p.ownerTeam, p.isFire);
+
+            if (p.clusterCount && !p.isClusterChild) {
+              for (let c = 0; c < p.clusterCount; c++) {
+                const spreadAng = -Math.PI / 2 + (c - (p.clusterCount - 1) / 2) * 0.34;
+                const spd = 4.5 + Math.random() * 3.5;
+                nextProjectiles.push({
+                  ...p,
+                  id: `${p.id}-cl-${c}`,
+                  x: nextX,
+                  y: nextY - 6,
+                  vx: Math.cos(spreadAng) * spd,
+                  vy: Math.sin(spreadAng) * spd,
+                  bounciness: 0,
+                  fuseTicks: -1,
+                  isClusterChild: true,
+                  damage: Math.round(p.damage * 0.72),
+                  blastRadius: Math.round(p.blastRadius * 0.75)
+                });
+              }
+            }
+            return;
+          } else {
+            p.x = nextX;
+            p.y = nextY;
+          }
+
+          if (p.fuseTicks > 0) {
+            p.fuseTicks--;
+            if (p.fuseTicks === 0) {
+              spawnExplosion(p.x, p.y, p.blastRadius, p.damage, p.knockback, p.ownerTeam, p.isFire);
+              if (p.clusterCount && !p.isClusterChild) {
+                for (let c = 0; c < p.clusterCount; c++) {
+                  const spreadAng = -Math.PI / 2 + (c - (p.clusterCount - 1) / 2) * 0.36;
+                  const spd = 5 + Math.random() * 3.5;
+                  nextProjectiles.push({
+                    ...p,
+                    id: `${p.id}-cl-${c}`,
+                    x: p.x,
+                    y: p.y - 6,
+                    vx: Math.cos(spreadAng) * spd,
+                    vy: Math.sin(spreadAng) * spd,
+                    bounciness: 0,
+                    fuseTicks: -1,
+                    isClusterChild: true,
+                    damage: Math.round(p.damage * 0.75),
+                    blastRadius: Math.round(p.blastRadius * 0.78)
+                  });
+                }
+              }
+              return;
+            }
+          }
+          nextProjectiles.push(p);
+        });
+        engine.projectiles = nextProjectiles;
+
+        // Cajas en paracaídas
+        engine.crates = engine.crates.filter((c) => {
+          if (c.parachute) {
+            c.x += (engine.turn.wind / 100) * 0.35;
+            c.y += c.vy;
+            if (terrain.isSolid(c.x, c.y + 8)) c.parachute = false;
+          } else if (!terrain.isSolid(c.x, c.y + 8)) {
+            c.y += 3.5;
+          }
+          if (c.y >= engine.waterY) {
+            sound.playSplash();
+            return false;
+          }
+          const collector = engine.worms.find((w) => w.alive && Math.hypot(w.x - c.x, w.y - 8 - c.y) < 18);
+          if (collector) {
+            sound.playWormVoice('collect');
+            if (c.kind === 'health') {
+              collector.hp += 50;
+              engine.floatingTexts.push({ x: collector.x, y: collector.y - 28, vy: -0.9, text: '+50 HP', color: '#4ade80', life: 55 });
+            } else if (c.weaponId) {
+              const inv = engine.turn.ammoByTeam[collector.teamIndex];
+              inv[c.weaponId] = (inv[c.weaponId] || 0) + 1;
+              engine.floatingTexts.push({ x: collector.x, y: collector.y - 28, vy: -0.9, text: `+1 ${c.label}`, color: '#facc15', life: 60 });
+            }
+            return false;
+          }
+          return true;
+        });
+
+        // Minas y barriles
+        engine.hazards = engine.hazards.filter((h) => {
+          if (!terrain.isSolid(h.x, h.y + 4)) h.y += 3.5;
+          if (h.y >= engine.waterY) return false;
+          if (h.kind === 'mine' && !h.triggered) {
+            if (engine.worms.some((w) => w.alive && Math.hypot(w.x - h.x, w.y - h.y) < 28)) {
+              h.triggered = true;
+              h.fuseTicks = 110;
+              sound.playBounce();
+            }
+          }
+          if (h.triggered) {
+            h.fuseTicks--;
+            if (h.fuseTicks <= 0) {
+              spawnExplosion(h.x, h.y - 4, h.kind === 'barrel' ? 54 : 44, h.kind === 'barrel' ? 45 : 42, 8, -1, h.kind === 'barrel');
+              return false;
+            }
+          }
+          return true;
+        });
+
+        // Llamas
+        engine.flames = engine.flames.filter((f) => {
+          f.life--;
+          f.vy += grav * 0.5;
+          f.vx += (engine.turn.wind / 100) * 0.03;
+          if (!terrain.isSolid(f.x + f.vx, f.y)) f.x += f.vx;
+          else f.vx *= -0.3;
+          if (!terrain.isSolid(f.x, f.y + f.vy)) f.y += f.vy;
+          else {
+            f.vy = 0;
+            f.vx *= 0.85;
+          }
+          if (f.life % 18 === 0) {
+            engine.worms.forEach((w) => {
+              if (w.alive && Math.hypot(w.x - f.x, w.y - 6 - f.y) < 16) {
+                w.hp = Math.max(0, w.hp - 3);
+                w.vx += (Math.random() - 0.5) * 2.5;
+                w.vy -= 1.8;
+                w.state = 'falling';
+              }
+            });
+          }
+          return f.life > 0 && f.y < engine.waterY;
+        });
+
+        engine.particles = engine.particles.filter((pt) => {
+          pt.life--;
+          pt.x += pt.vx;
+          pt.y += pt.vy;
+          pt.vy += pt.gravity;
+          return pt.life > 0;
+        });
+
+        engine.floatingTexts = engine.floatingTexts.filter((ft) => {
+          ft.life--;
+          ft.y += ft.vy;
+          return ft.life > 0;
+        });
+
+        engine.gravestones.forEach((g) => {
+          if (!terrain.isSolid(g.x, g.y + 2) && g.y < engine.waterY) {
+            g.vy += grav;
+            g.y += g.vy;
+          } else {
+            g.vy = 0;
+          }
+        });
+
+        // Seguimiento de cámara
+        if (engine.camera.manualPanTimer <= 0) {
+          const viewW = canvas.width / engine.camera.zoom;
+          const viewH = canvas.height / engine.camera.zoom;
+          let focusX = activeWorm ? activeWorm.x : WORLD_W / 2;
+          let focusY = activeWorm ? activeWorm.y : WORLD_H / 2;
+          if (engine.projectiles.length > 0) {
+            focusX = engine.projectiles[0].x;
+            focusY = engine.projectiles[0].y;
+          }
+          const targetCamX = Math.max(0, Math.min(WORLD_W - viewW, focusX - viewW * 0.5));
+          const targetCamY = Math.max(0, Math.min(WORLD_H - viewH, focusY - viewH * 0.55));
+          engine.camera.x += (targetCamX - engine.camera.x) * 0.08;
+          engine.camera.y += (targetCamY - engine.camera.y) * 0.08;
+        }
+
+        if (engine.turn.phase === 'resolving') {
+          const anyMoving =
+            engine.projectiles.length > 0 ||
+            engine.flames.length > 0 ||
+            engine.worms.some((w) => w.alive && (w.state === 'falling' || w.state === 'jumping'));
+          if (!anyMoving) {
+            if (engine.turn.ticksLeft > 0) engine.turn.ticksLeft--;
+            else advanceToNextTurn();
+          }
+        }
+      }
+
+      // ======================================================================
+      // RENDERIZADO MULTICAPA EN HTML5 CANVAS 2D (60 FPS)
+      // ======================================================================
+      function renderFrame() {
+        if (!engine || !terrain) return;
+        const W = canvas.width;
+        const H = canvas.height;
+        const cfg = BIOMES[terrain.biome];
+        const activeWorm = engine.worms.find((w) => w.id === engine.turn.activeWormId && w.alive);
+        const activeTeamCfg = teamsConfig[engine.turn.teamIndex];
+        const isAiTurn = Boolean(activeTeamCfg && activeTeamCfg.controller !== 'human');
+        const activeWeapon = WEAPONS_CATALOG.find((w) => w.id === engine.turn.selectedWeaponId) || WEAPONS_CATALOG[5];
+
+        ctx.save();
+
+        // 1. Cielo degradado
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+        skyGrad.addColorStop(0, cfg.skyTop);
+        skyGrad.addColorStop(0.55, cfg.skyMid);
+        skyGrad.addColorStop(1, cfg.skyBot);
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, W, H);
+
+        // Estrellas parpadeantes
+        if (cfg.hasStars) {
+          engine.stars.forEach((st) => {
+            const sx = (((st.x - engine.camera.x * 0.15) % W) + W) % W;
+            const alpha = 0.45 + 0.55 * Math.sin(engine.waterWavePhase * 1.4 + st.twinkle);
+            ctx.fillStyle = `rgba(255, 248, 190, ${alpha.toFixed(2)})`;
+            ctx.beginPath();
+            ctx.arc(sx, st.y, st.size, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        }
+
+        // Nubes cartoon
+        engine.clouds.forEach((cl) => {
+          const cx = ((((cl.x - engine.camera.x * 0.32) % (W + 240)) + (W + 240)) % (W + 240)) - 120;
+          ctx.save();
+          ctx.translate(cx, cl.y);
+          ctx.scale(cl.scale, cl.scale);
+          ctx.fillStyle = '#5a67b8';
+          ctx.beginPath();
+          ctx.arc(-22, 6, 16, 0, Math.PI * 2);
+          ctx.arc(0, 4, 21, 0, Math.PI * 2);
+          ctx.arc(24, 6, 15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#eef2ff';
+          ctx.beginPath();
+          ctx.arc(-22, 1, 15, 0, Math.PI * 2);
+          ctx.arc(0, -3, 20, 0, Math.PI * 2);
+          ctx.arc(24, 1, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+
+        const shakeX = engine.camera.shake > 0 ? (Math.random() - 0.5) * engine.camera.shake : 0;
+        const shakeY = engine.camera.shake > 0 ? (Math.random() - 0.5) * engine.camera.shake : 0;
+        ctx.scale(engine.camera.zoom, engine.camera.zoom);
+        ctx.translate(-engine.camera.x + shakeX, -engine.camera.y + shakeY);
+
+        // 2. Decoraciones escénicas de referencia (Torre radar y torreta)
+        if (terrain.biome === 'cheese') {
+          ctx.save();
+          ctx.translate(715, 395);
+          ctx.fillStyle = '#dc2626';
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(-16, 65);
+          ctx.lineTo(-10, 0);
+          ctx.lineTo(10, 0);
+          ctx.lineTo(16, 65);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.beginPath();
+          ctx.moveTo(-26, -24);
+          ctx.lineTo(26, -24);
+          ctx.lineTo(18, 4);
+          ctx.lineTo(-18, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(-18, -19, 36, 12);
+          ctx.beginPath();
+          ctx.arc(0, -38, 16, 0.2, Math.PI - 0.2);
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+
+          ctx.save();
+          ctx.translate(1690, 290);
+          ctx.fillStyle = '#eab308';
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 32, 18, -0.25, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = '#dc2626';
+          ctx.fillRect(10, -10, 34, 18);
+          ctx.strokeRect(10, -10, 34, 18);
+          ctx.restore();
+        }
+
+        // 3. Terreno destruible
+        ctx.drawImage(terrain.canvas, 0, 0);
+
+        // 4. Lápidas, minas, barriles y cajas
+        engine.gravestones.forEach((g) => {
+          ctx.save();
+          ctx.translate(g.x, g.y);
+          ctx.fillStyle = '#64748b';
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, -16, 9, Math.PI, 0);
+          ctx.lineTo(9, 0);
+          ctx.lineTo(-9, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = g.teamColor;
+          ctx.fillRect(-5, -14, 10, 3);
+          ctx.restore();
+        });
+
+        engine.hazards.forEach((h) => {
+          ctx.save();
+          ctx.translate(h.x, h.y);
+          if (h.kind === 'mine') {
+            ctx.fillStyle = '#334155';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, -3, 7, Math.PI, 0);
+            ctx.fill();
+            ctx.stroke();
+            const blink = h.triggered ? Math.floor(h.fuseTicks / 5) % 2 === 0 : Math.floor(engine.waterWavePhase * 4) % 4 === 0;
+            ctx.fillStyle = blink ? '#ef4444' : '#7f1d1d';
+            ctx.beginPath();
+            ctx.arc(0, -9, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+          } else {
+            ctx.fillStyle = '#dc2626';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2;
+            ctx.fillRect(-7, -18, 14, 18);
+            ctx.strokeRect(-7, -18, 14, 18);
+            ctx.fillStyle = '#facc15';
+            ctx.fillRect(-7, -12, 14, 5);
+          }
+          ctx.restore();
+        });
+
+        engine.crates.forEach((c) => {
+          ctx.save();
+          ctx.translate(c.x, c.y);
+          if (c.parachute) {
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-7, -7);
+            ctx.lineTo(-18, -32);
+            ctx.moveTo(7, -7);
+            ctx.lineTo(18, -32);
+            ctx.stroke();
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, -32, 20, Math.PI, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.fillStyle = '#b45309';
+          ctx.strokeStyle = '#1c1917';
+          ctx.lineWidth = 2;
+          ctx.fillRect(-9, -9, 18, 18);
+          ctx.strokeRect(-9, -9, 18, 18);
+          if (c.kind === 'health') {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-6, -6, 12, 12);
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(-2, -5, 4, 10);
+            ctx.fillRect(-5, -2, 10, 4);
+          } else {
+            ctx.strokeStyle = '#fde047';
+            ctx.beginPath();
+            ctx.moveTo(-7, -7);
+            ctx.lineTo(7, 7);
+            ctx.stroke();
+          }
+          ctx.restore();
+        });
+
+        // 5. Cuerda Ninja
+        if (engine.rope.active && activeWorm) {
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(engine.rope.anchorX, engine.rope.anchorY);
+          ctx.lineTo(activeWorm.x, activeWorm.y - 10);
+          ctx.stroke();
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(engine.rope.anchorX, engine.rope.anchorY, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 6. Gusanos + Etiquetas flotantes (Nombre + Salud)
+        engine.worms.forEach((w) => {
+          if (!w.alive) return;
+          const isActive = w.id === engine.turn.activeWormId;
+          const teamColor = teamsConfig[w.teamIndex] ? teamsConfig[w.teamIndex].color : '#ff6b6b';
+
+          ctx.save();
+          ctx.translate(w.x, w.y);
+
+          if (w.parachuteOpen && w.state === 'falling') {
+            ctx.strokeStyle = '#f8fafc';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-4, -12);
+            ctx.lineTo(-16, -34);
+            ctx.moveTo(4, -12);
+            ctx.lineTo(16, -34);
+            ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(0, -34, 18, Math.PI, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+
+          const breathe = Math.sin(engine.waterWavePhase * 2 + w.x * 0.1) * 0.6;
+          const walkBob = w.state === 'walking' ? Math.sin(w.walkFrame * 0.8) * 1.6 : 0;
+
+          ctx.fillStyle = w.frozen ? '#67e8f9' : '#f794bd';
+          ctx.strokeStyle = '#1e0b14';
+          ctx.lineWidth = 2;
+
+          ctx.beginPath();
+          ctx.ellipse(-w.facing * 5, -3.5, 5.5, 3.8, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.ellipse(0, -8.5 + walkBob * 0.4, 5.2, 7.5 - breathe * 0.3, w.facing * 0.12, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(w.facing * 1.5, -14.5 + breathe, 5.6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(w.facing * 3.2, -15.5 + breathe, 2.5, 0, Math.PI * 2);
+          ctx.arc(w.facing * 0.4, -15.5 + breathe, 2.3, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(w.facing * 3.8, -15.5 + breathe, 1.1, 0, Math.PI * 2);
+          ctx.arc(w.facing * 1.0, -15.5 + breathe, 1.1, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (isActive && engine.turn.phase === 'aim') {
+            ctx.save();
+            ctx.translate(0, -9);
+            ctx.rotate(w.facing === 1 ? w.aimAngle : Math.PI - w.aimAngle);
+            if (activeWeapon.id === 'bazooka' || activeWeapon.id === 'homing_missile' || activeWeapon.id === 'mortar') {
+              ctx.fillStyle = '#3f6212';
+              ctx.strokeStyle = '#0f172a';
+              ctx.lineWidth = 1.6;
+              ctx.fillRect(-6, -3, 18, 5.5);
+              ctx.strokeRect(-6, -3, 18, 5.5);
+            } else if (activeWeapon.type === 'grenade' || activeWeapon.id === 'dynamite') {
+              ctx.fillStyle = activeWeapon.id === 'banana_bomb' ? '#facc15' : '#1e293b';
+              ctx.beginPath();
+              ctx.arc(8, 0, 4.5, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (activeWeapon.type === 'hitscan') {
+              ctx.fillStyle = '#475569';
+              ctx.fillRect(-3, -2, 16, 3.5);
+            }
+            ctx.restore();
+          }
+          ctx.restore();
+
+          // Etiqueta flotante dark-pill (Nombre + HP)
+          ctx.save();
+          ctx.font = 'bold 11px Inter, sans-serif';
+          const nameW = ctx.measureText(w.name).width;
+          const boxW = Math.max(38, nameW + 10);
+          const boxH = 26;
+          const bx = w.x - boxW / 2;
+          const by = w.y - 52;
+
+          ctx.fillStyle = 'rgba(12, 15, 34, 0.84)';
+          ctx.strokeStyle = isActive ? '#facc15' : 'rgba(255,255,255,0.28)';
+          ctx.lineWidth = isActive ? 1.6 : 1;
+          ctx.beginPath();
+          ctx.roundRect(bx, by, boxW, boxH, 4);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.textAlign = 'center';
+          ctx.fillStyle = teamColor;
+          ctx.fillText(w.name, w.x, by + 11);
+          ctx.fillStyle = w.poisoned ? '#a3e635' : '#ffffff';
+          ctx.fillText(`${w.hp}`, w.x, by + 22);
+
+          if (isActive && engine.turn.phase === 'aim') {
+            const arrowBounce = Math.sin(engine.waterWavePhase * 3) * 4;
+            ctx.fillStyle = '#facc15';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(w.x, by - 6 + arrowBounce);
+            ctx.lineTo(w.x - 6, by - 16 + arrowBounce);
+            ctx.lineTo(w.x + 6, by - 16 + arrowBounce);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
+        });
+
+        // 7. Retícula de apuntado, láser y barra de potencia
+        if (activeWorm && engine.turn.phase === 'aim' && !isAiTurn) {
+          const worldAimAngle = activeWorm.facing === 1 ? activeWorm.aimAngle : Math.PI - activeWorm.aimAngle;
+          const cx = activeWorm.x + Math.cos(worldAimAngle) * 56;
+          const cy = activeWorm.y - 9 + Math.sin(worldAimAngle) * 56;
+
+          if (engine.turn.laserSight) {
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.65)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            ctx.moveTo(activeWorm.x, activeWorm.y - 9);
+            ctx.lineTo(activeWorm.x + Math.cos(worldAimAngle) * 520, activeWorm.y - 9 + Math.sin(worldAimAngle) * 520);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 8, 0, Math.PI * 2);
+          ctx.moveTo(-12, 0);
+          ctx.lineTo(12, 0);
+          ctx.moveTo(0, -12);
+          ctx.lineTo(0, 12);
+          ctx.stroke();
+          ctx.restore();
+
+          if (engine.turn.charging) {
+            const pRatio = Math.min(1, engine.turn.chargeTicks / 65);
+            const steps = Math.ceil(pRatio * 18);
+            for (let s = 1; s <= steps; s++) {
+              const dist = 16 + s * 3.2;
+              const px = activeWorm.x + Math.cos(worldAimAngle) * dist;
+              const py = activeWorm.y - 9 + Math.sin(worldAimAngle) * dist;
+              ctx.fillStyle = s < 6 ? '#facc15' : s < 13 ? '#f97316' : '#ef4444';
+              ctx.beginPath();
+              ctx.arc(px, py, 2.5 + s * 0.16, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+
+        if (engine.turn.targetPoint) {
+          const tp = engine.turn.targetPoint;
+          ctx.save();
+          ctx.translate(tp.x, tp.y);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 14 + Math.sin(engine.waterWavePhase * 3) * 3, 0, Math.PI * 2);
+          ctx.moveTo(-20, 0);
+          ctx.lineTo(20, 0);
+          ctx.moveTo(0, -20);
+          ctx.lineTo(0, 20);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // 8. Proyectiles y fauna
+        engine.projectiles.forEach((p) => {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          if (p.animalType === 'sheep' || p.animalType === 'super_sheep') {
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.ellipse(0, -4, 10, 7, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            ctx.arc((p.direction || 1) * 8, -5, 4, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (p.animalType === 'donkey') {
+            ctx.fillStyle = '#9ca3af';
+            ctx.strokeStyle = '#111827';
+            ctx.lineWidth = 3;
+            ctx.fillRect(-18, -28, 36, 36);
+            ctx.strokeRect(-18, -28, 36, 36);
+          } else {
+            ctx.rotate(Math.atan2(p.vy, p.vx));
+            if (p.weaponId === 'banana_bomb' || p.weaponId === 'super_banana') {
+              ctx.fillStyle = '#facc15';
+              ctx.strokeStyle = '#713f12';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(0, 0, 7, 0.2, Math.PI - 0.2);
+              ctx.fill();
+              ctx.stroke();
+            } else if (p.weaponId === 'holy_grenade') {
+              ctx.fillStyle = '#fde047';
+              ctx.strokeStyle = '#854d0e';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(0, 0, 7, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+            } else {
+              ctx.fillStyle = p.bounciness > 0 || p.fuseTicks > 0 ? '#16a34a' : '#ef4444';
+              ctx.strokeStyle = '#0f172a';
+              ctx.lineWidth = 1.8;
+              ctx.beginPath();
+              ctx.ellipse(0, 0, 7, 3.8, 0, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.stroke();
+            }
+          }
+          ctx.restore();
+
+          if (p.fuseTicks > 0 && p.fuseTicks <= 250) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 12px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${Math.ceil(p.fuseTicks / TICK_RATE)}`, p.x, p.y - 12);
+          }
+        });
+
+        // 9. Llamas, partículas y textos flotantes
+        engine.flames.forEach((f) => {
+          ctx.fillStyle = f.life % 2 === 0 ? 'rgba(249,115,22,0.85)' : 'rgba(250,204,21,0.85)';
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, 4 + Math.random() * 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        engine.particles.forEach((pt) => {
+          const alpha = Math.max(0, pt.life / pt.maxLife);
+          if (pt.kind === 'ring') {
+            ctx.strokeStyle = `rgba(255, 247, 237, ${alpha})`;
+            ctx.lineWidth = 4 * alpha;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.size * (1.2 - alpha * 0.5), 0, Math.PI * 2);
+            ctx.stroke();
+          } else {
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = pt.color;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+        });
+
+        engine.floatingTexts.forEach((ft) => {
+          ctx.save();
+          ctx.font = 'bold 14px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 3;
+          ctx.strokeText(ft.text, ft.x, ft.y);
+          ctx.fillStyle = ft.color;
+          ctx.fillText(ft.text, ft.x, ft.y);
+          ctx.restore();
+        });
+
+        // 10. Agua ondulante inferior
+        const waterTopY = engine.waterY;
+        ctx.fillStyle = cfg.waterDeep;
+        ctx.fillRect(0, waterTopY + 14, WORLD_W, WORLD_H - waterTopY);
+
+        const waveLayers = [
+          { offset: 0, amp: 4.5, freq: 0.032, color: cfg.waterTop, phaseMult: 1 },
+          { offset: 9, amp: 4.0, freq: 0.028, color: cfg.waterMid, phaseMult: -0.8 },
+          { offset: 18, amp: 3.5, freq: 0.035, color: cfg.waterDeep, phaseMult: 1.2 }
+        ];
+        waveLayers.forEach((wl) => {
+          ctx.beginPath();
+          ctx.moveTo(0, WORLD_H);
+          for (let wx = 0; wx <= WORLD_W; wx += 16) {
+            const wy = waterTopY + wl.offset + Math.sin(wx * wl.freq + engine.waterWavePhase * wl.phaseMult) * wl.amp;
+            ctx.lineTo(wx, wy);
+          }
+          ctx.lineTo(WORLD_W, WORLD_H);
+          ctx.closePath();
+          ctx.fillStyle = wl.color;
+          ctx.fill();
+        });
+
+        ctx.restore();
+      }
+
+      // ======================================================================
+      // ACTUALIZACIÓN DE HUD DOM
+      // ======================================================================
+      function updateHudDom() {
+        if (!engine) return;
+        const turnSec = Math.ceil(engine.turn.ticksLeft / TICK_RATE);
+        const roundSec = Math.ceil(engine.turn.roundTicksLeft / TICK_RATE);
+        const wDef = WEAPONS_CATALOG.find((w) => w.id === engine.turn.selectedWeaponId) || WEAPONS_CATALOG[5];
+
+        document.getElementById('hud-killfeed').textContent = engine.killFeed;
+        document.getElementById('hud-turn-dot').style.backgroundColor = teamsConfig[engine.turn.teamIndex]
+          ? teamsConfig[engine.turn.teamIndex].color
+          : '#facc15';
+        document.getElementById('hud-weapon-label').textContent = `[${wDef.category}] ${wDef.name}`;
+
+        const fuseBox = document.getElementById('hud-fuse-box');
+        if (wDef.hasFuse) {
+          fuseBox.classList.remove('hidden');
+          fuseBox.classList.add('flex');
+          document.querySelectorAll('.fuse-btn').forEach((btn) => {
+            const val = parseInt(btn.getAttribute('data-fuse'), 10);
+            btn.className = `fuse-btn w-5 h-5 rounded font-bold cursor-pointer ${
+              engine.turn.fuseSeconds === val ? 'bg-amber-400 text-slate-950' : 'text-slate-300 hover:bg-slate-800'
+            }`;
+          });
+        } else {
+          fuseBox.classList.add('hidden');
+          fuseBox.classList.remove('flex');
+        }
+
+        const girderBtn = document.getElementById('btn-rotate-girder');
+        if (wDef.type === 'girder') {
+          girderBtn.classList.remove('hidden');
+          girderBtn.textContent = `Rotar Viga (${engine.turn.girderAngle}°)`;
+        } else {
+          girderBtn.classList.add('hidden');
+        }
+
+        const hint = document.getElementById('hud-target-hint');
+        hint.classList.toggle('hidden', !(wDef.needsTarget && !engine.turn.targetPoint));
+
+        // Reloj de ronda y contador de turno
+        const clockEl = document.getElementById('hud-round-clock');
+        if (engine.suddenDeath) {
+          clockEl.textContent = 'S.DEATH';
+          clockEl.className = 'text-[11px] font-mono font-bold px-1.5 rounded border border-white/25 bg-rose-600 text-white animate-pulse';
+        } else {
+          const m = Math.floor(roundSec / 60);
+          const s = roundSec % 60;
+          clockEl.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+          clockEl.className = 'text-[11px] font-mono font-bold px-1.5 rounded border border-white/25 bg-slate-900 text-slate-200';
+        }
+
+        const timerEl = document.getElementById('hud-turn-timer');
+        timerEl.textContent = String(turnSec).padStart(2, '0');
+        timerEl.className = `text-2xl sm:text-3xl font-black leading-tight tabular-nums ${
+          turnSec <= 5 ? 'text-rose-500' : 'text-white'
+        }`;
+
+        // Barras de salud por equipo
+        const barsContainer = document.getElementById('hud-team-bars');
+        barsContainer.innerHTML = teamsConfig
+          .map((t, idx) => {
+            const tw = engine.worms.filter((w) => w.teamIndex === idx);
+            const totalHp = tw.reduce((sum, w) => sum + (w.alive ? w.hp : 0), 0);
+            const maxHp = tw.reduce((sum, w) => sum + w.maxHp, 0);
+            const pct = maxHp > 0 ? Math.max(0, Math.min(100, (totalHp / maxHp) * 100)) : 0;
+            return `
+              <div class="flex items-center gap-2 text-xs">
+                <span class="font-black w-24 truncate text-right" style="color:${t.color}">${t.name}</span>
+                <span style="color:${t.color}">💀</span>
+                <div class="flex-1 h-3.5 bg-slate-900 border border-black rounded-sm overflow-hidden">
+                  <div class="h-full transition-all duration-300" style="width:${pct}%; background-color:${t.color}"></div>
+                </div>
+                <span class="text-[11px] font-mono font-bold text-slate-200 w-9 text-right">${totalHp}</span>
+              </div>
+            `;
+          })
+          .join('');
+
+        // Viento
+        const wind = engine.turn.wind;
+        document.getElementById('hud-wind-text').textContent =
+          wind < 0 ? `<< ${Math.abs(wind)}` : wind > 0 ? `${wind} >>` : '0';
+        document.getElementById('hud-wind-left').style.width = wind < 0 ? `${Math.abs(wind)}%` : '0%';
+        document.getElementById('hud-wind-right').style.width = wind > 0 ? `${wind}%` : '0%';
+      }
+
+      // ======================================================================
+      // PANEL FLOTANTE DE ARMAMENTO (F1 - F12 + UTILIDADES)
+      // ======================================================================
+      function toggleArsenalModal(forceState) {
+        arsenalOpen = forceState !== undefined ? forceState : !arsenalOpen;
+        const modal = document.getElementById('modal-arsenal');
+        modal.classList.toggle('hidden', !arsenalOpen);
+        if (!arsenalOpen || !engine) return;
+
+        const activeWorm = engine.worms.find((w) => w.id === engine.turn.activeWormId);
+        document.getElementById('arsenal-subtitle').innerHTML =
+          `Selecciona un arma o utilidad para <strong class="text-white">${activeWorm ? activeWorm.name : ''}</strong>`;
+
+        const catNames = {
+          0: 'UTIL · Utilidades Tácticas',
+          1: 'F1 · Proyectiles Dirigidos',
+          2: 'F2 · Granadas y Explosivos',
+          3: 'F3 · Armas de Fuego',
+          4: 'F4 · Cuerpo a Cuerpo',
+          5: 'F5 · Detonables y Fauna',
+          6: 'F6 · Ataques Aéreos',
+          7: 'F7 · Excavación y Vigas',
+          8: 'F8 · Movilidad y Cuerda',
+          9: 'F9 · Especiales Devastadoras',
+          10: 'F10 · Masivos y Veneno',
+          11: 'F11 · Súper Armas Globales',
+          12: 'F12 · Comandos de Turno'
+        };
+
+        const inv = engine.turn.ammoByTeam[engine.turn.teamIndex] || {};
+        const grid = document.getElementById('arsenal-grid');
+        grid.innerHTML = '';
+
+        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].forEach((fNum) => {
+          const card = document.createElement('div');
+          card.className = 'bg-slate-900/90 border border-white/10 rounded-xl p-2.5 flex flex-col gap-1.5';
+          card.innerHTML = `<div class="text-[11px] font-black text-amber-300 uppercase tracking-wider border-b border-white/10 pb-1">${catNames[fNum]}</div>`;
+
+          const list = document.createElement('div');
+          list.className = 'flex flex-col gap-1';
+          WEAPONS_CATALOG.filter((w) => w.fKey === fNum).forEach((w) => {
+            const count = inv[w.id] || 0;
+            const selected = engine.turn.selectedWeaponId === w.id;
+            const disabled = count <= 0;
+            const btn = document.createElement('button');
+            btn.disabled = disabled;
+            btn.title = w.description;
+            btn.className = `flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs transition cursor-pointer ${
+              disabled
+                ? 'opacity-35 cursor-not-allowed bg-slate-950 text-slate-500'
+                : selected
+                ? 'bg-amber-400 text-slate-950 font-black'
+                : 'bg-slate-800/80 hover:bg-slate-700 text-slate-100 font-semibold'
+            }`;
+            btn.innerHTML = `
+              <span class="flex items-center gap-2 truncate">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:${w.accentColor}"></span>
+                <span class="truncate">${w.name}</span>
+              </span>
+              <span class="font-mono text-[11px] ml-2 shrink-0">${count >= 90 ? '∞' : 'x' + count}</span>
+            `;
+            btn.onclick = () => {
+              engine.turn.selectedWeaponId = w.id;
+              engine.turn.shotsRemaining = w.shotsPerTurn || 1;
+              engine.turn.targetPoint = null;
+              toggleArsenalModal(false);
+              showToast(`Equipado: ${w.name}`);
+            };
+            list.appendChild(btn);
+          });
+          card.appendChild(list);
+          grid.appendChild(card);
+        });
+      }
+
+      // ======================================================================
+      // BUCLE PRINCIPAL DE ANIMACIÓN (60 FPS RENDER + 50 HZ FÍSICA)
+      // ======================================================================
+      let lastTimestamp = performance.now();
+      let accumulator = 0;
+      let hudCounter = 0;
+
+      function mainLoop(now) {
+        if (currentScreen === 'playing' && engine) {
+          const elapsed = Math.min(0.1, (now - lastTimestamp) / 1000);
+          lastTimestamp = now;
+          accumulator += elapsed;
+          while (accumulator >= FIXED_DT) {
+            stepPhysics();
+            accumulator -= FIXED_DT;
+          }
+          renderFrame();
+          hudCounter++;
+          if (hudCounter >= 5) {
+            hudCounter = 0;
+            updateHudDom();
+          }
+        } else {
+          lastTimestamp = now;
+        }
+        requestAnimationFrame(mainLoop);
+      }
+
+      // ======================================================================
+      // EVENTOS DE TECLADO, RATÓN, TÁCTIL Y BOTONES DE INTERFAZ
+      // ======================================================================
+      window.addEventListener('keydown', (e) => {
+        if (currentScreen !== 'playing' || !engine) return;
+
+        if (e.code.startsWith('F') && e.code.length <= 3) {
+          const fNum = parseInt(e.code.slice(1), 10);
+          if (fNum >= 1 && fNum <= 12) {
+            e.preventDefault();
+            const group = WEAPONS_CATALOG.filter((w) => w.fKey === fNum);
+            const curIdx = group.findIndex((w) => w.id === engine.turn.selectedWeaponId);
+            const next = group[(curIdx + 1) % group.length];
+            engine.turn.selectedWeaponId = next.id;
+            engine.turn.shotsRemaining = next.shotsPerTurn || 1;
+            engine.turn.targetPoint = null;
+            showToast(`[F${fNum}] ${next.name}`);
+            return;
+          }
+        }
+
+        if (e.code === 'Tab') {
+          e.preventDefault();
+          toggleArsenalModal();
+          return;
+        }
+
+        if (e.code === 'Escape' || e.code === 'KeyP') {
+          if (arsenalOpen) toggleArsenalModal(false);
+          else {
+            paused = !paused;
+            document.getElementById('pause-info-text').textContent =
+              `Esquema: ${SCHEMES[selectedScheme].name} · Bioma: ${BIOMES[selectedBiome].name}`;
+            document.getElementById('modal-pause').classList.toggle('hidden', !paused);
+          }
+          return;
+        }
+
+        if (e.code === 'KeyC') {
+          engine.camera.manualPanTimer = 0;
+          return;
+        }
+
+        if (e.code === 'KeyR') {
+          engine.turn.girderAngle = (engine.turn.girderAngle + 22.5) % 180;
+          return;
+        }
+
+        if (['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'].includes(e.code)) {
+          const sec = parseInt(e.code.replace('Digit', ''), 10);
+          engine.turn.fuseSeconds = sec;
+          showToast(`Temporizador: ${sec}s`);
+          return;
+        }
+
+        engine.keys.add(e.code);
+
+        const activeWorm = engine.worms.find((w) => w.id === engine.turn.activeWormId && w.alive);
+        const isHuman = teamsConfig[engine.turn.teamIndex] && teamsConfig[engine.turn.teamIndex].controller === 'human';
+        if (!activeWorm || !isHuman || paused) return;
+
+        if (e.code === 'Enter' && (activeWorm.state === 'standing' || activeWorm.state === 'walking')) {
+          activeWorm.vx = activeWorm.facing * 3.4;
+          activeWorm.vy = -5.6;
+          activeWorm.state = 'jumping';
+          activeWorm.fallPeakY = activeWorm.y;
+          sound.playWormVoice('jump');
+        } else if (e.code === 'Backspace' && (activeWorm.state === 'standing' || activeWorm.state === 'walking')) {
+          e.preventDefault();
+          activeWorm.vx = -activeWorm.facing * 1.4;
+          activeWorm.vy = -7.6;
+          activeWorm.state = 'jumping';
+          activeWorm.fallPeakY = activeWorm.y;
+          sound.playWormVoice('jump');
+        }
+
+        if (e.code === 'Space') {
+          e.preventDefault();
+          const activeAnimal = engine.projectiles.find(
+            (p) => p.ownerWormId === activeWorm.id && (p.animalType === 'sheep' || p.animalType === 'super_sheep' || p.animalType === 'cow')
+          );
+          if (activeAnimal) {
+            activeAnimal.fuseTicks = 1;
+            return;
+          }
+          if (activeWorm.state === 'falling' && !activeWorm.parachuteOpen) {
+            activeWorm.parachuteOpen = true;
+            sound.playWormVoice('jump');
+            return;
+          }
+          if (engine.turn.phase !== 'aim') return;
+          const wDef = WEAPONS_CATALOG.find((w) => w.id === engine.turn.selectedWeaponId);
+          if (!wDef) return;
+          if (wDef.type === 'projectile' || wDef.type === 'grenade') {
+            if (!engine.turn.charging) {
+              engine.turn.charging = true;
+              engine.turn.chargeTicks = 4;
+            }
+          } else {
+            fireSelectedWeapon(0.75);
+          }
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        if (!engine) return;
+        engine.keys.delete(e.code);
+        if (e.code === 'Space' && engine.turn.charging && engine.turn.phase === 'aim') {
+          fireSelectedWeapon();
+        }
+      });
+
+      canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (currentScreen === 'playing') toggleArsenalModal();
+      });
+
+      canvas.addEventListener('pointerdown', (e) => {
+        if (!engine) return;
+        if (e.button === 2) {
+          toggleArsenalModal();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const wx = sx / engine.camera.zoom + engine.camera.x;
+        const wy = sy / engine.camera.zoom + engine.camera.y;
+
+        const wDef = WEAPONS_CATALOG.find((w) => w.id === engine.turn.selectedWeaponId);
+        const isHuman = teamsConfig[engine.turn.teamIndex] && teamsConfig[engine.turn.teamIndex].controller === 'human';
+
+        if (isHuman && engine.turn.phase === 'aim' && wDef && wDef.needsTarget) {
+          engine.turn.targetPoint = { x: wx, y: wy };
+          sound.playWormVoice('collect');
+          showToast(`Objetivo fijado (${Math.round(wx)}, ${Math.round(wy)})`);
+          return;
+        }
+        engine.mouse.dragging = true;
+        engine.mouse.lastX = sx;
+        engine.mouse.lastY = sy;
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!engine || !engine.mouse.dragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const sx = e.clientX - rect.left;
+        const sy = e.clientY - rect.top;
+        const dx = (sx - engine.mouse.lastX) / engine.camera.zoom;
+        const dy = (sy - engine.mouse.lastY) / engine.camera.zoom;
+        const viewW = canvas.width / engine.camera.zoom;
+        const viewH = canvas.height / engine.camera.zoom;
+        engine.camera.x = Math.max(0, Math.min(WORLD_W - viewW, engine.camera.x - dx));
+        engine.camera.y = Math.max(0, Math.min(WORLD_H - viewH, engine.camera.y - dy));
+        engine.camera.manualPanTimer = 180;
+        engine.mouse.lastX = sx;
+        engine.mouse.lastY = sy;
+      });
+
+      window.addEventListener('pointerup', () => {
+        if (engine) engine.mouse.dragging = false;
+      });
+
+      canvas.addEventListener('wheel', (e) => {
+        if (!engine) return;
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        engine.camera.zoom = Math.max(0.65, Math.min(1.65, engine.camera.zoom + delta));
+      }, { passive: true });
+
+      // Inyectar logotipos SVG en menú y juego
+      document.getElementById('menu-logo-container').innerHTML = createLogoSvg(false);
+      document.getElementById('playing-logo-overlay').innerHTML = createLogoSvg(true);
+
+      // Enlaces de botones del Menú Principal
+      document.getElementById('btn-quick-play').onclick = () => startNewMatch(Date.now(), 'cheese', 'classic');
+      document.getElementById('btn-full-wormage').onclick = () => startNewMatch(Date.now(), 'cheese', 'full_wormage');
+      document.getElementById('btn-open-lobby').onclick = () => switchScreen('lobby');
+      document.getElementById('btn-open-help').onclick = () => document.getElementById('modal-help').classList.remove('hidden');
+      document.getElementById('btn-close-help').onclick = () => document.getElementById('modal-help').classList.add('hidden');
+
+      const updateMuteButtons = () => {
+        document.getElementById('mute-icon-menu').textContent = sound.muted ? '🔇 Silenciado' : '🔊 Sonido Activo';
+        document.getElementById('btn-mute-game').textContent = sound.muted ? '🔇' : '🔊';
+      };
+      document.getElementById('btn-mute-menu').onclick = () => {
+        sound.muted = !sound.muted;
+        updateMuteButtons();
+      };
+      document.getElementById('btn-mute-game').onclick = () => {
+        sound.muted = !sound.muted;
+        updateMuteButtons();
+      };
+
+      // Enlaces del Lobby
+      document.getElementById('btn-lobby-back').onclick = () => switchScreen('menu');
+      document.getElementById('btn-lobby-start').onclick = () => startNewMatch();
+      document.getElementById('btn-new-seed').onclick = () => {
+        mapSeed = Math.floor(100000 + Math.random() * 899999);
+        renderLobby();
+      };
+      document.getElementById('btn-add-team').onclick = () => {
+        if (teamsConfig.length >= 4) return;
+        const palette = ['#feca57', '#ff9ff3', '#48dbfb', '#ff6b6b'];
+        const idx = teamsConfig.length;
+        teamsConfig.push({
+          id: `team-${Date.now()}`,
+          name: `CPU ${idx}`,
+          color: palette[idx % palette.length],
+          controller: 'ai_normal',
+          worms: ['4 LP', 'Titch', 'Rusty', 'Smudge', 'Biff']
+        });
+        saveTeamsStorage();
+        renderLobby();
+      };
+
+      document.getElementById('btn-export-json').onclick = () => {
+        const payload = JSON.stringify({ biome: selectedBiome, schemeId: selectedScheme, teamsConfig }, null, 2);
+        const blob = new Blob([payload], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'worms_armageddon_esquema.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('Configuración exportada en JSON');
+      };
+
+      document.getElementById('input-import-json').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(String(reader.result));
+            if (Array.isArray(parsed.teamsConfig)) teamsConfig = parsed.teamsConfig;
+            if (parsed.biome && BIOMES[parsed.biome]) selectedBiome = parsed.biome;
+            if (parsed.schemeId && SCHEMES[parsed.schemeId]) selectedScheme = parsed.schemeId;
+            saveTeamsStorage();
+            renderLobby();
+            showToast('Esquema importado correctamente');
+          } catch (err) {
+            showToast('Archivo JSON no válido');
+          }
+        };
+        reader.readAsText(file);
+      };
+
+      // Enlaces del HUD en partida
+      document.getElementById('btn-open-arsenal').onclick = () => toggleArsenalModal();
+      document.getElementById('btn-close-arsenal').onclick = () => toggleArsenalModal(false);
+
+      document.querySelectorAll('.fuse-btn').forEach((btn) => {
+        btn.onclick = () => {
+          if (engine) engine.turn.fuseSeconds = parseInt(btn.getAttribute('data-fuse'), 10);
+        };
+      });
+
+      document.getElementById('btn-rotate-girder').onclick = () => {
+        if (engine) engine.turn.girderAngle = (engine.turn.girderAngle + 22.5) % 180;
+      };
+
+      const toggleLogo = () => {
+        showLogoOverlay = !showLogoOverlay;
+        document.getElementById('playing-logo-overlay').classList.toggle('hidden', !showLogoOverlay);
+      };
+      document.getElementById('playing-logo-overlay').onclick = toggleLogo;
+      document.getElementById('btn-toggle-logo').onclick = toggleLogo;
+
+      document.getElementById('btn-zoom-in').onclick = () => {
+        if (engine) engine.camera.zoom = Math.min(1.65, engine.camera.zoom + 0.15);
+      };
+      document.getElementById('btn-zoom-out').onclick = () => {
+        if (engine) engine.camera.zoom = Math.max(0.65, engine.camera.zoom - 0.15);
+      };
+
+      document.getElementById('btn-pause-game').onclick = () => {
+        paused = !paused;
+        document.getElementById('pause-info-text').textContent =
+          `Esquema: ${SCHEMES[selectedScheme].name} · Bioma: ${BIOMES[selectedBiome].name}`;
+        document.getElementById('modal-pause').classList.toggle('hidden', !paused);
+      };
+      document.getElementById('btn-resume-game').onclick = () => {
+        paused = false;
+        document.getElementById('modal-pause').classList.add('hidden');
+      };
+      document.getElementById('btn-restart-match').onclick = () => startNewMatch(Date.now());
+      document.getElementById('btn-quit-to-menu').onclick = () => {
+        paused = false;
+        document.getElementById('modal-pause').classList.add('hidden');
+        switchScreen('menu');
+      };
+
+      // Modales de Fin de Partida
+      document.getElementById('btn-rematch').onclick = () => startNewMatch(Date.now());
+      document.getElementById('btn-gameover-lobby').onclick = () => {
+        document.getElementById('modal-gameover').classList.add('hidden');
+        switchScreen('lobby');
+      };
+      document.getElementById('btn-gameover-menu').onclick = () => {
+        document.getElementById('modal-gameover').classList.add('hidden');
+        switchScreen('menu');
+      };
+
+      // Controles táctiles para móvil
+      document.querySelectorAll('.touch-key-btn').forEach((btn) => {
+        const key = btn.getAttribute('data-touch-key');
+        btn.addEventListener('pointerdown', () => engine && engine.keys.add(key));
+        btn.addEventListener('pointerup', () => engine && engine.keys.delete(key));
+        btn.addEventListener('pointerleave', () => engine && engine.keys.delete(key));
+      });
+      document.getElementById('btn-touch-jump').onclick = () => {
+        if (!engine) return;
+        const w = engine.worms.find((x) => x.id === engine.turn.activeWormId);
+        if (w && (w.state === 'standing' || w.state === 'walking')) {
+          w.vx = w.facing * 3.4;
+          w.vy = -5.6;
+          w.state = 'jumping';
+          sound.playWormVoice('jump');
+        }
+      };
+      const touchFire = document.getElementById('btn-touch-fire');
+      touchFire.addEventListener('pointerdown', () => {
+        if (engine && engine.turn.phase === 'aim') {
+          engine.turn.charging = true;
+          engine.turn.chargeTicks = 6;
+        }
+      });
+      touchFire.addEventListener('pointerup', () => {
+        if (engine && engine.turn.charging) fireSelectedWeapon();
+      });
+
+      // Iniciar bucle de renderizado y física
+      window.addEventListener('load', () => {
+        requestAnimationFrame(mainLoop);
+      });
+      requestAnimationFrame(mainLoop);
+    })();
+  </script>
+</body>
+</html>
